@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jakeuj.github.io/Community-Module-Pack/sitemap.xml
+Sitemap: https://gw.jakeuj.com/sitemap.xml
