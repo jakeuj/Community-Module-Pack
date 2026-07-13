@@ -16,6 +16,11 @@ on:
       - "Events Module/**"
       - ".github/workflows/events-module-zh-tw.yml"
   workflow_dispatch:
+    inputs:
+      new_version:
+        description: "Fork Release 版號，例如 events-zh-tw-v1.0.9-fork.1；留空會依 manifest 基礎版號自動遞增 fork.N。"
+        required: false
+        type: string
 
 concurrency:
   group: events-module-zh-tw-${{ github.ref }}
@@ -26,10 +31,63 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      models: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve fork release version
+        id: version
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+
+          $tagPrefix = "events-zh-tw-"
+          $versionPattern = '^events-zh-tw-v\d+\.\d+\.\d+-fork\.\d+(-test\d*)?$'
+
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $version = "${{ github.ref_name }}"
+          } else {
+            $version = "${{ inputs.new_version }}".Trim()
+
+            if ([string]::IsNullOrWhiteSpace($version)) {
+              $manifest = Get-Content -Raw "Events Module\manifest.json" | ConvertFrom-Json
+              $baseVersion = [string]$manifest.version
+              if ($baseVersion -notmatch '^\d+\.\d+\.\d+$') {
+                throw "Events Module manifest version '$baseVersion' must match X.Y.Z."
+              }
+
+              $baseTag = "${tagPrefix}v$baseVersion"
+              $escapedBase = [regex]::Escape($baseTag)
+              $latestFork = git tag --list "$baseTag-fork.*" --sort=-v:refname |
+                Where-Object { $_ -match "^$escapedBase-fork\.\d+$" } |
+                Select-Object -First 1
+
+              if (-not [string]::IsNullOrWhiteSpace($latestFork) -and
+                  $latestFork -match '-fork\.(?<fork>\d+)$') {
+                $version = "$baseTag-fork.$([int]$Matches.fork + 1)"
+              } else {
+                $version = "$baseTag-fork.1"
+              }
+            } elseif ($version.StartsWith($tagPrefix)) {
+              # Already fully qualified.
+            } elseif ($version.StartsWith('v')) {
+              $version = "$tagPrefix$version"
+            } else {
+              $version = "${tagPrefix}v$version"
+            }
+          }
+
+          if ($version -notmatch $versionPattern) {
+            throw "Fork Release version '$version' must match events-zh-tw-vX.Y.Z-fork.N."
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Resolved fork release version: $version"
 
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -134,34 +192,193 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Events-Module-zh-TW
+          name: Events-Module-zh-TW-${{ steps.version.outputs.version }}
           path: artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm
           if-no-files-found: error
 
+      - name: Create tag for manual release
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          $tag = "${{ steps.version.outputs.version }}"
+          $existingTag = git tag --list $tag
+          if (-not [string]::IsNullOrWhiteSpace($existingTag)) {
+            throw "Tag $tag already exists."
+          }
+
+          git tag -a $tag -m "Release $tag"
+          git push origin $tag
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Generate release notes with GitHub Models
+        id: notes
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/events-zh-tw-v')
+        uses: actions/github-script@v9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const fs = require("fs");
+            const { execFileSync } = require("child_process");
+
+            const tag = process.env.RELEASE_VERSION;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const allTags = execFileSync(
+              "git",
+              ["tag", "--list", "events-zh-tw-v*", "--sort=-v:refname"],
+              { encoding: "utf8" },
+            )
+              .trim()
+              .split(/\r?\n/)
+              .filter(Boolean);
+
+            const stableForkPattern = /^events-zh-tw-v\d+\.\d+\.\d+-fork\.\d+$/;
+            let previousTag = allTags.find(
+              (candidate) => candidate !== tag && stableForkPattern.test(candidate),
+            );
+
+            if (!previousTag) {
+              const baseMatch = tag.match(
+                /^(events-zh-tw-v\d+\.\d+\.\d+)-fork\.\d+(?:-test\d*)?$/,
+              );
+              if (baseMatch && allTags.includes(baseMatch[1])) {
+                previousTag = baseMatch[1];
+              }
+            }
+
+            const range = previousTag ? `${previousTag}..HEAD` : "HEAD";
+            const commits = execFileSync(
+              "git",
+              ["log", "--no-merges", "--pretty=format:%h %s", range],
+              { encoding: "utf8" },
+            ).trim();
+            const commitList = commits
+              ? commits.split(/\r?\n/).map((line) => `- ${line}`).join("\n")
+              : "- 沒有可列出的 commit";
+            const compareLine = previousTag
+              ? `\n\n**完整變更**：[${previousTag}...${tag}](https://github.com/${repo}/compare/${previousTag}...${tag})`
+              : "";
+
+            const fallbackLines = [
+              "## 更新內容",
+              "",
+              commitList,
+              "",
+              "## 安裝方式",
+              "",
+              "- 下載下方的 `Events Module.bhm`。",
+              "- 將檔案放入 Blish HUD 的模組資料夾，完全重新啟動 Blish HUD。",
+              "",
+              "## 版本說明",
+              "",
+              "- `X.Y.Z` 對應上游 Events Module 版本。",
+              "- `fork.N` 是台灣繁體中文 Fork 的發行次序。",
+            ];
+            if (compareLine) {
+              fallbackLines.push(compareLine.trim());
+            }
+            let body = fallbackLines.join("\n");
+
+            try {
+              const response = await fetch(
+                "https://models.github.ai/inference/chat/completions",
+                {
+                  method: "POST",
+                  headers: {
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+                    "Content-Type": "application/json",
+                    "X-GitHub-Api-Version": "2026-03-10",
+                  },
+                  body: JSON.stringify({
+                    model: "openai/gpt-4o",
+                    messages: [
+                      {
+                        role: "system",
+                        content: [
+                          "Write concise GitHub release notes in Taiwan Traditional Chinese.",
+                          "This is the Blish HUD Events and Metas Observer localization fork for Guild Wars 2.",
+                          "Group user-visible localization changes, fixes, and CI/build changes.",
+                          "Use established Guild Wars 2 terminology and do not invent changes.",
+                          "Include installation instructions for Events Module.bhm.",
+                          "Return Markdown only.",
+                        ].join(" "),
+                      },
+                      {
+                        role: "user",
+                        content: `Release: ${tag}\nPrevious tag: ${previousTag || "none"}\nCommits:\n${commits || "none"}`,
+                      },
+                    ],
+                    temperature: 0.2,
+                    max_tokens: 700,
+                  }),
+                },
+              );
+
+              if (!response.ok) {
+                throw new Error(
+                  `GitHub Models request failed: ${response.status} ${await response.text()}`,
+                );
+              }
+
+              const data = await response.json();
+              const generated = data?.choices?.[0]?.message?.content?.trim();
+              if (generated) {
+                body = `${generated}${compareLine}`;
+              }
+            } catch (error) {
+              core.warning(
+                `Falling back to commit-based release notes: ${error.message}`,
+              );
+            }
+
+            fs.writeFileSync("release-notes.md", body, "utf8");
+            core.setOutput("path", "release-notes.md");
+
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/events-zh-tw-v')
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/events-zh-tw-v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.ref_name }}"
+          $tag = "${{ steps.version.outputs.version }}"
           $repo = "${{ github.repository }}"
           $asset = "artifacts\Events-and-Metas-Observer-zh-TW\Events Module.bhm"
-          $notes = @'
-          台灣繁體中文版本，由 GitHub Actions 從此標籤的原始碼自動建置並驗證。
-
-          安裝方式：下載 `Events Module.bhm`，放入 Blish HUD 的模組資料夾後重新啟動。
-          '@
+          $notesFile = "${{ steps.notes.outputs.path }}"
+          $title = "Events and Metas Observer 繁中 $tag"
 
           gh release view $tag --repo $repo 2>$null | Out-Null
           $releaseExists = $LASTEXITCODE -eq 0
 
           if ($releaseExists) {
             gh release upload $tag $asset --repo $repo --clobber
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            $editArgs = @(
+              'release', 'edit', $tag,
+              '--repo', $repo,
+              '--title', $title,
+              '--notes-file', $notesFile
+            )
+            if ($tag -match '-test\d*$') {
+              $editArgs += '--prerelease'
+            }
+            gh @editArgs
           } else {
-            gh release create $tag $asset `
-              --repo $repo `
-              --title "Events and Metas Observer 繁中 $tag" `
-              --notes $notes
+            $createArgs = @(
+              'release', 'create', $tag, $asset,
+              '--repo', $repo,
+              '--title', $title,
+              '--notes-file', $notesFile,
+              '--verify-tag'
+            )
+            if ($tag -match '-test\d*$') {
+              $createArgs += '--prerelease'
+            }
+            gh @createArgs
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -99,13 +99,18 @@ artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm
 `.github/workflows/events-module-zh-tw.yml` 在以下情況執行：
 
 - `master` 或 PR 變更 `Events Module/**`：驗證並建置 workflow artifact。
-- 推送 `events-zh-tw-v*` 標籤：驗證、建置並建立 GitHub Release。
+- 推送 `events-zh-tw-vX.Y.Z-fork.N` 標籤：驗證、建置並建立 GitHub Release。
+- 手動執行 workflow：可指定完整 Fork 版號；留空時讀取 `Events Module/manifest.json` 的 `X.Y.Z`，並自動遞增相同基礎版號最新的 `fork.N`。
 
-只有使用者明確要求發布時才建立標籤。發布前先讓 `master` CI 通過，再推送例如：
+Fork Release 不沿用上游的裸 `vX.Y.Z` 或舊的 `events-zh-tw-vX.Y.Z`，避免同步上游標籤時發生版號語意或名稱衝突。標準格式例如：
 
 ```text
-events-zh-tw-v1.0.9
+events-zh-tw-v1.0.9-fork.1
 ```
+
+`X.Y.Z` 對應目前 Events Module manifest 的上游基礎版號；只有本 Fork 的修改才遞增 `fork.N`。上游升版後，新的基礎版號會從 `fork.1` 重新開始。
+
+只有使用者明確要求發布時才建立標籤。發布前先讓 `master` CI 通過；一般建議直接手動執行 workflow 並留空版號，由 CI 建立下一個 Fork 標籤與 Release。
 
 GitHub 可能把 Release 資產檔名中的空格正規化為點號，例如 `Events.Module.bhm`；副檔名與內容不受影響。
 
