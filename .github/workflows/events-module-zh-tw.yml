@@ -304,8 +304,11 @@ jobs:
                           "This is the Blish HUD Events and Metas Observer localization fork for Guild Wars 2.",
                           "Group user-visible localization changes, fixes, and CI/build changes.",
                           "Use established Guild Wars 2 terminology and do not invent changes.",
+                          "Only include changes relevant to the Events Module localization, package, or release workflow.",
+                          "Omit unrelated repository changes such as GitHub Pages work.",
+                          "Format commit hashes as inline code, never as issue or pull request numbers.",
                           "Include installation instructions for Events Module.bhm.",
-                          "Return Markdown only.",
+                          "Return Markdown without wrapping it in a fenced code block.",
                         ].join(" "),
                       },
                       {
@@ -328,7 +331,11 @@ jobs:
               const data = await response.json();
               const generated = data?.choices?.[0]?.message?.content?.trim();
               if (generated) {
-                body = `${generated}${compareLine}`;
+                const cleaned = generated
+                  .replace(/^\s*```(?:markdown)?\s*/i, "")
+                  .replace(/\s*```\s*$/i, "")
+                  .trim();
+                body = `${cleaned}${compareLine}`;
               }
             } catch (error) {
               core.warning(
