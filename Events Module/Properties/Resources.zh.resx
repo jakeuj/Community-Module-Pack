@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="All Events" xml:space="preserve">
+    <value>所有活動</value>
+  </data>
+  <data name="Alphabetical" xml:space="preserve">
+    <value>依字母排序</value>
+  </data>
+  <data name="Events and Metas" xml:space="preserve">
+    <value>活動與大型活動</value>
+  </data>
+  <data name="Hidden Events" xml:space="preserve">
+    <value>隱藏的活動</value>
+  </data>
+  <data name="Next Up" xml:space="preserve">
+    <value>即將開始</value>
+  </data>
+  <data name="Enable Notifications" xml:space="preserve">
+    <value>啟用通知</value>
+  </data>
+  <data name="Mute Notifications" xml:space="preserve">
+    <value>通知靜音</value>
+  </data>
+  <data name="Event Categories" xml:space="preserve">
+    <value>活動分類</value>
+  </data>
+  <data name="Event Search" xml:space="preserve">
+    <value>搜尋活動</value>
+  </data>
+  <data name="Read about this event on the wiki." xml:space="preserve">
+    <value>在 Wiki 上閱讀此活動的相關資訊。</value>
+  </data>
+  <data name="Nearby waypoint: {0}" xml:space="preserve">
+    <value>附近的傳送點：{0}</value>
+  </data>
+  <data name="Failed to copy waypoint to clipboard. Try again." xml:space="preserve">
+    <value>無法將傳送點複製到剪貼簿，請再試一次。</value>
+  </data>
+  <data name="Copied waypoint to clipboard!" xml:space="preserve">
+    <value>已將傳送點複製到剪貼簿！</value>
+  </data>
+  <data name="Click to toggle tracking for this event." xml:space="preserve">
+    <value>點擊以切換此活動的追蹤狀態。</value>
+  </data>
+  <data name="Starts in {0}" xml:space="preserve">
+    <value>將於 {0} 後開始</value>
+  </data>
+  <data name="Upcoming Event Times:" xml:space="preserve">
+    <value>接下來的活動時間：</value>
+  </data>
+  <data name="Notification_Tooltip" xml:space="preserve">
+    <value>左鍵點擊以複製傳送點。
+右鍵點擊以關閉。</value>
+  </data>
+  <data name="Failed to load metas from events.json!" xml:space="preserve">
+    <value>無法從 events.json 載入大型活動！</value>
+  </data>
+  <data name="Day-Night Cycle" xml:space="preserve">
+    <value>晝夜循環</value>
+  </data>
+  <data name="Day" xml:space="preserve">
+    <value>白天</value>
+  </data>
+  <data name="Night" xml:space="preserve">
+    <value>夜晚</value>
+  </data>
+  <data name="Dawn" xml:space="preserve">
+    <value>黎明</value>
+  </data>
+  <data name="Dusk" xml:space="preserve">
+    <value>黃昏</value>
+  </data>
+  <data name="Server Reset" xml:space="preserve">
+    <value>伺服器重置</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="Group Event" xml:space="preserve">
+    <value>團隊活動</value>
+  </data>
+  <data name="Ley-Line Anomaly (Timberline Falls)" xml:space="preserve">
+    <value>地脈異常體（林線瀑布）</value>
+  </data>
+  <data name="Ley-Line Anomaly (Iron Marches)" xml:space="preserve">
+    <value>地脈異常體（鋼鐵平原）</value>
+  </data>
+  <data name="Ley-Line Anomaly (Gendarran Fields)" xml:space="preserve">
+    <value>地脈異常體（甘達拉戰區）</value>
+  </data>
+  <data name="World Bosses" xml:space="preserve">
+    <value>世界首領</value>
+  </data>
+  <data name="Admiral Taidha Covington" xml:space="preserve">
+    <value>泰達．科文頓海軍上將</value>
+  </data>
+  <data name="Claw of Jormag" xml:space="preserve">
+    <value>喬瑪格之爪</value>
+  </data>
+  <data name="Drakkar, the Ice Dragon's Champion" xml:space="preserve">
+    <value>冰龍勇士德拉卡</value>
+  </data>
+  <data name="Evolved Jungle Wurm" xml:space="preserve">
+    <value>進化型叢林蟲</value>
+  </data>
+  <data name="Fire Elemental" xml:space="preserve">
+    <value>火元素</value>
+  </data>
+  <data name="Great Jungle Wurm" xml:space="preserve">
+    <value>巨型叢林蟲</value>
+  </data>
+  <data name="Inquest Golem Mark II" xml:space="preserve">
+    <value>審訊團魔像二型</value>
+  </data>
+  <data name="Karka Queen" xml:space="preserve">
+    <value>卡卡蟲女王</value>
+  </data>
+  <data name="Megadestroyer" xml:space="preserve">
+    <value>超級毀滅者</value>
+  </data>
+  <data name="Modniir Ulgoth" xml:space="preserve">
+    <value>莫迪爾烏格斯</value>
+  </data>
+  <data name="Shadow Behemoth" xml:space="preserve">
+    <value>暗影巨獸</value>
+  </data>
+  <data name="The Shatterer" xml:space="preserve">
+    <value>粉碎者</value>
+  </data>
+  <data name="Svanir Shaman Chief" xml:space="preserve">
+    <value>斯瓦尼爾薩滿酋長</value>
+  </data>
+  <data name="Tequatl the Sunless" xml:space="preserve">
+    <value>無光者泰科特爾</value>
+  </data>
+  <data name="Meta Event" xml:space="preserve">
+    <value>大型活動</value>
+  </data>
+  <data name="Crash Site" xml:space="preserve">
+    <value>墜毀現場</value>
+  </data>
+  <data name="Sandstorm" xml:space="preserve">
+    <value>沙塵暴</value>
+  </data>
+  <data name="Securing Verdant Brink" xml:space="preserve">
+    <value>鞏固翠綠邊境</value>
+  </data>
+  <data name="Night and the Enemy" xml:space="preserve">
+    <value>暗夜與敵人</value>
+  </data>
+  <data name="Night Bosses" xml:space="preserve">
+    <value>夜間首領</value>
+  </data>
+  <data name="Trial by Fire" xml:space="preserve">
+    <value>烈火試煉</value>
+  </data>
+  <data name="Battle in Tarir" xml:space="preserve">
+    <value>塔瑞爾之戰</value>
+  </data>
+  <data name="Defending Tarir" xml:space="preserve">
+    <value>保衛塔瑞爾</value>
+  </data>
+  <data name="Chak Gerent" xml:space="preserve">
+    <value>查克蟲王</value>
+  </data>
+  <data name="Advancing on the Blighting Towers" xml:space="preserve">
+    <value>進攻枯萎高塔</value>
+  </data>
+  <data name="Casino Blitz" xml:space="preserve">
+    <value>賭場閃電戰</value>
+  </data>
+  <data name="Choya Pinata" xml:space="preserve">
+    <value>喬亞皮納塔</value>
+  </data>
+  <data name="The Search for Buried Treasure" xml:space="preserve">
+    <value>尋找埋藏的寶藏</value>
+  </data>
+  <data name="The Path to Ascension" xml:space="preserve">
+    <value>昇華之路</value>
+  </data>
+  <data name="Junundu Rising" xml:space="preserve">
+    <value>朱努杜崛起</value>
+  </data>
+  <data name="Maws of Torment" xml:space="preserve">
+    <value>折磨之喉</value>
+  </data>
+  <data name="Forged with Fire" xml:space="preserve">
+    <value>烈火鍛造</value>
+  </data>
+  <data name="Serpents' Ire" xml:space="preserve">
+    <value>蛇群之怒</value>
+  </data>
+  <data name="Palawadan, Jewel of Istan" xml:space="preserve">
+    <value>伊斯坦明珠帕拉瓦丹</value>
+  </data>
+  <data name="Dangerous Prey" xml:space="preserve">
+    <value>危險獵物</value>
+  </data>
+  <data name="Thunderhead Keep" xml:space="preserve">
+    <value>雷首要塞</value>
+  </data>
+  <data name="The Oil Floes" xml:space="preserve">
+    <value>浮油區</value>
+  </data>
+  <data name="A Concert for the Ages" xml:space="preserve">
+    <value>千古音樂會</value>
+  </data>
+  <data name="Ceremony of the Sacred Flame" xml:space="preserve">
+    <value>聖火儀式</value>
+  </data>
+  <data name="The Haunting of Doomlore Shrine" xml:space="preserve">
+    <value>末日傳說聖殿鬧鬼事件</value>
+  </data>
+  <data name="The Ooze Pit Trials" xml:space="preserve">
+    <value>軟泥坑試煉</value>
+  </data>
+  <data name="Storms of Winter" xml:space="preserve">
+    <value>凜冬風暴</value>
+  </data>
+  <data name="Watched Events" xml:space="preserve">
+    <value>已追蹤活動</value>
+  </data>
+  <data name="A Titanic Voyage" xml:space="preserve">
+    <value>壯闊航程</value>
+  </data>
+  <data name="Adventure" xml:space="preserve">
+    <value>冒險</value>
+  </data>
+  <data name="Aetherblade Assault" xml:space="preserve">
+    <value>以太之刃突襲</value>
+  </data>
+  <data name="Aspenwood" xml:space="preserve">
+    <value>阿斯彭森林</value>
+  </data>
+  <data name="Battle For Lion's Arch (Public)" xml:space="preserve">
+    <value>獅子拱門之戰（公開）</value>
+  </data>
+  <data name="Convergence" xml:space="preserve">
+    <value>匯流</value>
+  </data>
+  <data name="Convergence: Mount Balrior" xml:space="preserve">
+    <value>匯流：巴爾里奧山</value>
+  </data>
+  <data name="Convergence: Outer Nayos" xml:space="preserve">
+    <value>匯流：納約斯外域</value>
+  </data>
+  <data name="Dawn - Cantha" xml:space="preserve">
+    <value>黎明－凱珊</value>
+  </data>
+  <data name="Day - Cantha" xml:space="preserve">
+    <value>白天－凱珊</value>
+  </data>
+  <data name="Dolyak Race" xml:space="preserve">
+    <value>多萊克競賽</value>
+  </data>
+  <data name="Dragonstorm (Public)" xml:space="preserve">
+    <value>龍之風暴（公開）</value>
+  </data>
+  <data name="Dusk - Cantha" xml:space="preserve">
+    <value>黃昏－凱珊</value>
+  </data>
+  <data name="Fishing Tournament" xml:space="preserve">
+    <value>釣魚錦標賽</value>
+  </data>
+  <data name="Fly by Night" xml:space="preserve">
+    <value>夜間飛行</value>
+  </data>
+  <data name="Fractal Incursion: Brisban Wildlands" xml:space="preserve">
+    <value>碎層入侵：布里斯班野地</value>
+  </data>
+  <data name="Fractal Incursion: Diessa Plateau" xml:space="preserve">
+    <value>碎層入侵：底耶沙高地</value>
+  </data>
+  <data name="Fractal Incursion: Kessex Hills" xml:space="preserve">
+    <value>碎層入侵：凱席斯山</value>
+  </data>
+  <data name="Fractal Incursion: Snowden Drifts" xml:space="preserve">
+    <value>碎層入侵：漂雪邊境</value>
+  </data>
+  <data name="Gang War" xml:space="preserve">
+    <value>幫派戰爭</value>
+  </data>
+  <data name="Hammerhart Rumble" xml:space="preserve">
+    <value>錘心大亂鬥</value>
+  </data>
+  <data name="Jade Maw" xml:space="preserve">
+    <value>翡翠巨口</value>
+  </data>
+  <data name="Kaineng Blackout" xml:space="preserve">
+    <value>凱寧大停電</value>
+  </data>
+  <data name="Moredremoth Invasion: Brisban Wildlands" xml:space="preserve">
+    <value>墨德摩斯入侵：布里斯班野地</value>
+  </data>
+  <data name="Moredremoth Invasion: Diessa Plateau" xml:space="preserve">
+    <value>墨德摩斯入侵：底耶沙高地</value>
+  </data>
+  <data name="Moredremoth Invasion: Kessex Hils" xml:space="preserve">
+    <value>墨德摩斯入侵：凱席斯山</value>
+  </data>
+  <data name="Night - Cantha" xml:space="preserve">
+    <value>夜晚－凱珊</value>
+  </data>
+  <data name="Of Mists and Monsters" xml:space="preserve">
+    <value>迷霧與怪物</value>
+  </data>
+  <data name="Preparations" xml:space="preserve">
+    <value>備戰</value>
+  </data>
+  <data name="Secrets of the Weald" xml:space="preserve">
+    <value>林野秘辛</value>
+  </data>
+  <data name="Skiff Race" xml:space="preserve">
+    <value>小艇競賽</value>
+  </data>
+  <data name="Skimmer Race" xml:space="preserve">
+    <value>飛魚競賽</value>
+  </data>
+  <data name="Target Practice" xml:space="preserve">
+    <value>射擊訓練</value>
+  </data>
+  <data name="The Battle for the Jade Sea" xml:space="preserve">
+    <value>翡翠海之戰</value>
+  </data>
+  <data name="The Defense of Amnytas" xml:space="preserve">
+    <value>阿姆尼塔斯保衛戰</value>
+  </data>
+  <data name="Treasure Hunt" xml:space="preserve">
+    <value>尋寶活動</value>
+  </data>
+  <data name="Twisted Marionette (Public)" xml:space="preserve">
+    <value>扭曲木偶（公開）</value>
+  </data>
+  <data name="Unlocking the Wizard's Tower" xml:space="preserve">
+    <value>解鎖巫師塔</value>
+  </data>
+  <data name="White Mantle Control: New Loamhurst" xml:space="preserve">
+    <value>白斗篷控制區：新洛姆赫斯特</value>
+  </data>
+  <data name="White Mantle Control: Noran's Homestead" xml:space="preserve">
+    <value>白斗篷控制區：諾蘭家園</value>
+  </data>
+  <data name="White Mantle Control: Saidra's Haven" xml:space="preserve">
+    <value>白斗篷控制區：賽德拉避難所</value>
+  </data>
+</root>

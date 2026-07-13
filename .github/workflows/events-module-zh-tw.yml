@@ -1,0 +1,167 @@
+name: Events Module zh-TW
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - events-zh-tw-v*
+    paths:
+      - "Events Module/**"
+      - ".github/workflows/events-module-zh-tw.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "Events Module/**"
+      - ".github/workflows/events-module-zh-tw.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: events-module-zh-tw-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore Events Module dependencies
+        shell: pwsh
+        run: |
+          nuget restore "Events Module\packages.config" -PackagesDirectory packages -NonInteractive
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          nuget install Microsoft.NETFramework.ReferenceAssemblies.net472 `
+            -Version 1.0.3 `
+            -OutputDirectory packages `
+            -NonInteractive
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate Traditional Chinese coverage
+        shell: pwsh
+        run: |
+          $events = Get-Content -Raw "Events Module\ref\events.json" | ConvertFrom-Json
+          [xml]$resources = Get-Content -Raw "Events Module\Properties\Resources.zh.resx"
+
+          $translations = @{}
+          foreach ($item in $resources.root.data) {
+            $translations[[string]$item.name] = [string]$item.value
+          }
+
+          $eventStrings = @(
+            $events |
+              ForEach-Object { [string]$_.category; [string]$_.name } |
+              Where-Object { $_ } |
+              Sort-Object -Unique
+          )
+
+          $missing = @($eventStrings | Where-Object { -not $translations.ContainsKey($_) })
+          if ($missing.Count -gt 0) {
+            throw "Missing Traditional Chinese resources: $($missing -join ', ')"
+          }
+
+          $englishValues = @($eventStrings | Where-Object { $translations[$_] -match '[A-Za-z]' })
+          if ($englishValues.Count -gt 0) {
+            throw "Event translations still contain English text: $($englishValues -join ', ')"
+          }
+
+          Write-Host "Validated $($events.Count) event records and $($eventStrings.Count) unique event strings."
+
+      - name: Build Traditional Chinese BHM
+        shell: pwsh
+        run: |
+          $frameworkRoot = "$env:GITHUB_WORKSPACE\packages\Microsoft.NETFramework.ReferenceAssemblies.net472.1.0.3\build\"
+          $outDir = "$env:GITHUB_WORKSPACE\artifacts\Events-and-Metas-Observer-zh-TW\"
+
+          msbuild "Events Module\Events Module.csproj" `
+            /t:Rebuild `
+            /p:Configuration=Release `
+            /p:Platform=AnyCPU `
+            /p:ChineseBuild=true `
+            "/p:TargetFrameworkRootPath=$frameworkRoot" `
+            "/p:OutDir=$outDir" `
+            /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify package
+        shell: pwsh
+        run: |
+          $outDir = "$env:GITHUB_WORKSPACE\artifacts\Events-and-Metas-Observer-zh-TW"
+          $dll = Join-Path $outDir "Events Module.dll"
+          $bhm = Join-Path $outDir "Events Module.bhm"
+
+          if (-not (Test-Path $dll)) { throw "Missing compiled DLL: $dll" }
+          if (-not (Test-Path $bhm)) { throw "Missing BHM package: $bhm" }
+
+          $assembly = [System.Reflection.Assembly]::LoadFile($dll)
+          $stream = $assembly.GetManifestResourceStream("Events_Module.Properties.Resources.resources")
+          if ($null -eq $stream) { throw "Missing embedded Traditional Chinese resources." }
+
+          $reader = [System.Resources.ResourceReader]::new($stream)
+          $resourceCount = 0
+          $enumerator = $reader.GetEnumerator()
+          while ($enumerator.MoveNext()) { $resourceCount++ }
+          $reader.Close()
+          if ($resourceCount -lt 114) { throw "Expected at least 114 embedded resources, found $resourceCount." }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
+          try {
+            if ($null -eq $archive.GetEntry("Events Module.dll")) {
+              throw "BHM does not contain Events Module.dll."
+            }
+            if ($null -eq $archive.GetEntry("ref/events.json")) {
+              throw "BHM does not contain ref/events.json."
+            }
+          } finally {
+            $archive.Dispose()
+          }
+
+          Write-Host "BHM SHA-256: $((Get-FileHash $bhm -Algorithm SHA256).Hash)"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Events-Module-zh-TW
+          path: artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/events-zh-tw-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          $asset = "artifacts\Events-and-Metas-Observer-zh-TW\Events Module.bhm"
+          $notes = @'
+          台灣繁體中文版本，由 GitHub Actions 從此標籤的原始碼自動建置並驗證。
+
+          安裝方式：下載 `Events Module.bhm`，放入 Blish HUD 的模組資料夾後重新啟動。
+          '@
+
+          gh release view $tag --repo $repo 2>$null | Out-Null
+          $releaseExists = $LASTEXITCODE -eq 0
+
+          if ($releaseExists) {
+            gh release upload $tag $asset --repo $repo --clobber
+          } else {
+            gh release create $tag $asset `
+              --repo $repo `
+              --title "Events and Metas Observer 繁中 $tag" `
+              --notes $notes
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
