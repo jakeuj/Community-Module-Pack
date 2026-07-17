@@ -173,18 +173,18 @@ jobs:
       - name: Build Traditional Chinese BHM
         shell: pwsh
         run: |
-          $arguments = @(
-            '-RepoRoot', $env:GITHUB_WORKSPACE,
-            '-Configuration', 'Release',
-            '-OutDir', 'artifacts\Events-and-Metas-Observer-zh-TW',
-            '-SkipRestore'
-          )
+          $buildParameters = @{
+            RepoRoot = $env:GITHUB_WORKSPACE
+            Configuration = 'Release'
+            OutDir = 'artifacts\Events-and-Metas-Observer-zh-TW'
+            SkipRestore = $true
+          }
           $packageVersion = "${{ steps.version.outputs.package_version }}"
           if (-not [string]::IsNullOrWhiteSpace($packageVersion)) {
-            $arguments += @('-PackageVersion', $packageVersion)
+            $buildParameters.PackageVersion = $packageVersion
           }
 
-          & ".agents\skills\localize-build-events-module\scripts\build-events-zh-tw.ps1" @arguments
+          & ".agents\skills\localize-build-events-module\scripts\build-events-zh-tw.ps1" @buildParameters
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify package
