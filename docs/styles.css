@@ -468,10 +468,114 @@ code {
 .event-icon.gold { color: #dbb55b; }
 
 .section,
+.update-section,
 .install-section,
 .companion {
   padding: 92px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.update-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(480px, 1.12fr);
+  gap: 64px;
+  align-items: center;
+}
+
+.update-copy h2 {
+  margin-bottom: 24px;
+  font-size: clamp(2.3rem, 4.6vw, 4.7rem);
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+}
+
+.update-intro {
+  color: var(--muted);
+}
+
+.update-points {
+  display: grid;
+  gap: 16px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-points li {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.update-points li > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(102, 215, 209, 0.45);
+  border-radius: 50%;
+  color: var(--cyan);
+  background: rgba(102, 215, 209, 0.06);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.update-points strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.update-points p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.update-note {
+  margin-top: 30px;
+  padding: 18px 20px;
+  border: 1px solid rgba(215, 181, 109, 0.42);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(215, 181, 109, 0.07);
+}
+
+.update-note p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.update-shot {
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid #566268;
+  border-radius: 10px;
+  background: #111617;
+  box-shadow: 0 32px 100px var(--shadow), 0 0 0 10px rgba(255, 255, 255, 0.012);
+}
+
+.update-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.update-shot figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 16px;
+  border-top: 1px solid #3a4549;
+  color: var(--muted);
+  background: linear-gradient(90deg, #1d2528, #141a1c);
+  font-size: 0.78rem;
+}
+
+.update-shot figcaption strong {
+  color: var(--text);
 }
 
 .section-heading {
@@ -694,6 +798,11 @@ footer div {
     min-height: auto;
   }
 
+  .update-section {
+    grid-template-columns: 1fr;
+    gap: 46px;
+  }
+
   .module-window,
   .product-shot {
     transform: none;
@@ -715,6 +824,7 @@ footer div {
 
   .hero,
   .section,
+  .update-section,
   .install-section,
   .companion {
     padding: 64px 0;
@@ -795,6 +905,11 @@ footer div {
     align-items: flex-start;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .update-shot figcaption {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .window-bar {
