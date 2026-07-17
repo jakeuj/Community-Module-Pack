@@ -58,6 +58,7 @@
     <Compile Include="EventsModule.cs" />
     <Compile Include="Meta.cs" />
     <Compile Include="NotificationMover.cs" />
+    <Compile Include="OfficialEventIconMatcher.cs" />
     <Compile Include="OfficialEventTimerData.cs" />
     <Compile Include="OfficialEventTimerService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

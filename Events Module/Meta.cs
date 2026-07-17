@@ -8,6 +8,7 @@ using Blish_HUD.Content;
 using Blish_HUD.Modules.Managers;
 using Events_Module.Properties;
 using Humanizer;
+using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 
 namespace Events_Module {
@@ -16,6 +17,12 @@ namespace Events_Module {
     public class Meta {
 
         private static readonly Logger Logger = Logger.GetLogger<Meta>();
+
+        private static readonly object IconTextureCacheLock = new object();
+        private static readonly Dictionary<string, AsyncTexture2D> IconTextureCache =
+            new Dictionary<string, AsyncTexture2D>(StringComparer.OrdinalIgnoreCase);
+        private static ContentsManager _contentsManager;
+        private static Texture2D _fallbackTexture;
 
         [JsonObject]
         public struct Phase {
@@ -76,7 +83,13 @@ namespace Events_Module {
         protected bool HasAlerted = false;
 
         private string _icon;
+        private string _localIconPath;
         private string _wikiEn;
+        private AsyncTexture2D _texture;
+
+        public Meta() {
+            _texture = new AsyncTexture2D(GetFallbackTexture());
+        }
 
         public string Icon {
             get => _icon;
@@ -84,15 +97,90 @@ namespace Events_Module {
                 if (_icon == value) return;
 
                 _icon = value;
-
-                if (!string.IsNullOrEmpty(_icon)) {
-                    this.Texture = GameService.Content.GetRenderServiceTexture(_icon);
-                }
+                LoadIconTexture();
             }
         }
 
         [JsonIgnore]
-        public AsyncTexture2D Texture { get; private set; } = new AsyncTexture2D(GameService.Content.GetTexture(@"102377"));
+        internal string LocalIconPath {
+            get => _localIconPath;
+            set {
+                if (string.Equals(_localIconPath, value, StringComparison.OrdinalIgnoreCase)) return;
+
+                _localIconPath = value;
+                LoadIconTexture();
+            }
+        }
+
+        [JsonIgnore]
+        public AsyncTexture2D Texture => _texture;
+
+        internal static void ConfigureIconTextures(ContentsManager contentsManager, Texture2D fallbackTexture) {
+            lock (IconTextureCacheLock) {
+                _contentsManager = contentsManager;
+                _fallbackTexture = fallbackTexture;
+                IconTextureCache.Clear();
+            }
+        }
+
+        private static Texture2D GetFallbackTexture() {
+            return _fallbackTexture ?? GameService.Content.GetTexture(@"102377");
+        }
+
+        private void LoadIconTexture() {
+            bool useLocalIcon = !string.IsNullOrWhiteSpace(_localIconPath);
+
+            if (!useLocalIcon && string.IsNullOrWhiteSpace(_icon)) {
+                _texture = new AsyncTexture2D(GetFallbackTexture());
+                return;
+            }
+
+            string cacheKey = useLocalIcon ? "local:" + _localIconPath : "render:" + _icon;
+
+            lock (IconTextureCacheLock) {
+                if (IconTextureCache.TryGetValue(cacheKey, out AsyncTexture2D cachedTexture)) {
+                    _texture = cachedTexture;
+                    return;
+                }
+
+                var displayTexture = new AsyncTexture2D(GetFallbackTexture());
+                IconTextureCache.Add(cacheKey, displayTexture);
+                _texture = displayTexture;
+
+                if (useLocalIcon) {
+                    try {
+                        Texture2D localTexture = _contentsManager?.GetTexture(_localIconPath);
+
+                        if (localTexture != null && !ReferenceEquals(localTexture, ContentService.Textures.Error)) {
+                            displayTexture.SwapTexture(localTexture);
+                        } else {
+                            Logger.Warn("Failed to load local event icon {eventIcon}.", _localIconPath);
+                        }
+                    } catch (Exception exception) {
+                        Logger.Warn(exception, "Failed to load local event icon {eventIcon}.", _localIconPath);
+                    }
+
+                    return;
+                }
+
+                try {
+                    AsyncTexture2D requestedTexture = GameService.Content.GetRenderServiceTexture(_icon);
+                    EventHandler<ValueChangedEventArgs<Texture2D>> textureSwapped = null;
+
+                    textureSwapped = delegate(object sender, ValueChangedEventArgs<Texture2D> args) {
+                        requestedTexture.TextureSwapped -= textureSwapped;
+
+                        if (args.NewValue != null && !ReferenceEquals(args.NewValue, ContentService.Textures.Error)) {
+                            displayTexture.SwapTexture(args.NewValue);
+                        }
+                    };
+
+                    requestedTexture.TextureSwapped += textureSwapped;
+                } catch (ArgumentException exception) {
+                    Logger.Warn(exception, "Ignored invalid event icon {eventIcon}.", _icon);
+                }
+            }
+        }
 
         public static void UpdateEventSchedules() {
             if (Events == null) return;
@@ -197,12 +285,31 @@ namespace Events_Module {
                                                         IReadOnlyList<Meta> bundledEvents) {
             var bundled = bundledEvents ?? new List<Meta>();
             var officialEvents = new List<Meta>();
+            var iconCandidates = bundled.Select(item => new OfficialEventIconCandidate {
+                Name = item.Name,
+                Colloquial = item.Colloquial,
+                Category = item.Category,
+                Location = item.Location,
+                Waypoint = item.Waypoint,
+                Icon = item.Icon
+            }).ToList();
             DateTime utcDay = DateTime.UtcNow.Date;
 
             foreach (var definition in definitions ?? Enumerable.Empty<OfficialEventDefinition>()) {
                 if (definition.StartMinutesUtc == null || definition.StartMinutesUtc.Count == 0) continue;
 
                 Meta template = FindBundledTemplate(definition, bundled);
+                string renderIcon = !string.IsNullOrWhiteSpace(template?.Icon) ? template.Icon : null;
+                string localIconPath = null;
+
+                if (string.IsNullOrWhiteSpace(renderIcon)) {
+                    localIconPath = OfficialEventIconMatcher.FindLocalIconPath(definition.StableId);
+
+                    if (string.IsNullOrWhiteSpace(localIconPath)) {
+                        renderIcon = OfficialEventIconMatcher.FindBestIcon(definition, iconCandidates);
+                    }
+                }
+
                 var meta = new Meta {
                     StableId = definition.StableId,
                     Name = template?.Name ?? definition.Name,
@@ -215,7 +322,8 @@ namespace Events_Module {
                     Duration = definition.Duration > 0 ? (int?)definition.Duration : null,
                     Reminder = template?.Reminder ?? 5,
                     Phases = template?.Phases,
-                    Icon = template?.Icon
+                    Icon = renderIcon,
+                    LocalIconPath = localIconPath
                 };
 
                 meta._times.AddRange(definition.StartMinutesUtc

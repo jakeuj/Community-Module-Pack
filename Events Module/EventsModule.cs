@@ -110,9 +110,12 @@ namespace Events_Module {
         private void LoadTextures() {
             _textureWatch       = ContentsManager.GetTexture(@"textures\605021.png");
             _textureWatchActive = ContentsManager.GetTexture(@"textures\605019.png");
+            Meta.ConfigureIconTextures(ContentsManager, ContentsManager.GetTexture(@"textures\1466345.png"));
         }
 
         protected override async Task LoadAsync() {
+            LoadTextures();
+
             _bundledEvents = await Meta.LoadBundled(this.ContentsManager);
             Meta.SetEvents(_bundledEvents);
 
@@ -132,7 +135,6 @@ namespace Events_Module {
             }
 
             _nextOfficialRefreshUtc = DateTime.UtcNow + OfficialRefreshInterval;
-            LoadTextures();
 
             _tabPanel = BuildSettingPanel(GameService.Overlay.BlishHudWindow.ContentRegion);
         }

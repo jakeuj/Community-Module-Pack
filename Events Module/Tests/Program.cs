@@ -81,6 +81,8 @@ namespace Events_Module {
             AssertThrows(Fixture.Replace("'r': 2", "'r': 9"), "Missing segment references must be rejected.");
             AssertThrows(Fixture.Replace("[&BEwCAAA=]", "not-a-chat-link"), "Malformed waypoint chat links must be rejected.");
 
+            RunIconMatcherTests();
+
             bool productionGuardRejectedFixture = false;
             try {
                 OfficialEventTimerParser.Parse(Fixture);
@@ -88,6 +90,129 @@ namespace Events_Module {
                 productionGuardRejectedFixture = true;
             }
             Assert(productionGuardRejectedFixture, "Production sanity-count checks did not reject a tiny payload.");
+        }
+
+        private static void RunIconMatcherTests() {
+            var candidates = new[] {
+                new OfficialEventIconCandidate {
+                    Name = "Inquest Golem Mark II",
+                    Location = "Mount Maelstrom",
+                    Waypoint = "[&BNQCAAA=]",
+                    Icon = "golem-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "Battle For Lion's Arch (Public)",
+                    Location = "Eye of the North",
+                    Icon = "battle-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "White Mantle Control: Noran's Homestead",
+                    Location = "Lake Doric",
+                    Icon = "noran-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "Chak Gerent",
+                    Location = "Tangled Depths",
+                    Icon = "tangled-depths-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "Ley-Line Anomaly (Timberline Falls)",
+                    Location = "Timberline Falls",
+                    Icon = "ley-line-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "Tequatl the Sunless",
+                    Location = "Sparkfly Fen",
+                    Waypoint = "[&BNABAAA=]",
+                    Icon = "tequatl-icon"
+                },
+                new OfficialEventIconCandidate {
+                    Name = "No usable icon",
+                    Location = "Unmatched",
+                    Icon = null
+                }
+            };
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Golem Mark II",
+                GroupName = "World bosses"
+            }, candidates) == "golem-icon", "Short official names should reuse descriptive bundled event icons.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Battle For Lion's Arch",
+                GroupName = "Eye of the North"
+            }, candidates) == "battle-icon", "Parenthetical bundled suffixes should not prevent an icon match.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Noran's Homestead",
+                GroupName = "Lake Doric"
+            }, candidates) == "noran-icon", "Descriptive bundled prefixes should not prevent an icon match.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Prep",
+                GroupName = "Tangled Depths"
+            }, candidates) == "tangled-depths-icon", "Map phases should inherit their group icon.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Timberline Falls",
+                GroupName = "Ley-Line Anomaly"
+            }, candidates) == "ley-line-icon", "Locations in bundled parentheses should remain available for icon matching.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Localized or renamed Tequatl",
+                GroupName = "World bosses",
+                Waypoint = "[&BNABAAA=]"
+            }, candidates) == "tequatl-icon", "Waypoint identity should preserve a boss icon when its display name changes.");
+
+            Assert(OfficialEventIconMatcher.FindBestIcon(new OfficialEventDefinition {
+                Name = "Automated Tournament: Melandru's Matchup",
+                GroupName = "EU PvP Tournaments"
+            }, candidates) == null, "Unrelated events should use the local fallback instead of a misleading icon.");
+
+            var localIconMappings = new Dictionary<string, string[]> {
+                [@"textures\events\day.png"] = new[] {
+                    "wiki:core-dn:1", "wiki:eod-dn:1", "wiki:voe-dn:1"
+                },
+                [@"textures\events\dusk.png"] = new[] {
+                    "wiki:core-dn:2", "wiki:eod-dn:2", "wiki:voe-dn:2"
+                },
+                [@"textures\events\night.png"] = new[] {
+                    "wiki:core-dn:3", "wiki:eod-dn:3", "wiki:voe-dn:3"
+                },
+                [@"textures\events\dawn.png"] = new[] {
+                    "wiki:core-dn:4", "wiki:eod-dn:4", "wiki:voe-dn:4"
+                },
+                [@"textures\events\tournament-balthazar.png"] = new[] {
+                    "wiki:core-ateu:1", "wiki:core-atna:1"
+                },
+                [@"textures\events\tournament-grenth.png"] = new[] {
+                    "wiki:core-ateu:2", "wiki:core-atna:2"
+                },
+                [@"textures\events\tournament-melandru.png"] = new[] {
+                    "wiki:core-ateu:3", "wiki:core-atna:3"
+                },
+                [@"textures\events\tournament-lyssa.png"] = new[] {
+                    "wiki:core-ateu:4", "wiki:core-atna:4"
+                },
+                [@"textures\events\invasion-awakened.png"] = new[] { "wiki:core-in:1" },
+                [@"textures\events\invasion-scarlet.png"] = new[] { "wiki:core-in:2" },
+                [@"textures\events\shackles-of-the-ancients.png"] = new[] { "wiki:voe-eg:1" }
+            };
+            int mappedEventCount = 0;
+
+            foreach (KeyValuePair<string, string[]> mapping in localIconMappings) {
+                foreach (string stableId in mapping.Value) {
+                    Assert(OfficialEventIconMatcher.FindLocalIconPath(stableId) == mapping.Key,
+                           "Stable event ID " + stableId + " did not map to " + mapping.Key + ".");
+                    mappedEventCount++;
+                }
+            }
+
+            Assert(mappedEventCount == 23, "Expected all 23 previously missing event icons to be mapped.");
+            Assert(OfficialEventIconMatcher.FindLocalIconPath("wiki:future-event:1") == null,
+                   "Unknown future events must continue to use the safe fallback icon.");
+            Assert(OfficialEventIconMatcher.FindLocalIconPath(null) == null,
+                   "Missing stable IDs must continue to use the safe fallback icon.");
         }
 
         private static void RunLiveAudit() {

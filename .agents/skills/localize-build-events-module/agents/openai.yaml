@@ -1,4 +1,4 @@
 interface:
-  display_name: "Events Module 繁中建置"
-  short_description: "檢查繁中覆蓋並建置可發布的 Events Module"
-  default_prompt: "使用 $localize-build-events-module 補齊 Events Module 繁中資源並建置驗證 BHM。"
+  display_name: "Events Module 繁中建置部署"
+  short_description: "同步官方 Wiki、驗證圖示並安全建置部署繁中 BHM"
+  default_prompt: "使用 $localize-build-events-module 對齊官方時程與繁中資源，驗證圖示、建置 BHM，並確認本機安裝版本。"

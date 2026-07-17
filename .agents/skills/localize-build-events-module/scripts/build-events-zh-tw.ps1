@@ -67,6 +67,20 @@ function Ensure-Net472ReferencePack {
 
 $validator = Join-Path $PSScriptRoot 'validate-events-localization.ps1'
 $validation = & $validator -RepoRoot $RepoRoot
+$iconValidator = Join-Path $RepoRoot 'Events Module\Tests\ValidateEventIcons.ps1'
+$iconSourceDirectory = Join-Path $RepoRoot 'Events Module\ref\textures\events'
+
+foreach ($path in @($iconValidator, $iconSourceDirectory)) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "Required event icon validation path not found: $path"
+    }
+}
+
+& $iconValidator
+$iconFiles = @(Get-ChildItem -LiteralPath $iconSourceDirectory -Filter '*.png' -File | Sort-Object Name)
+if ($iconFiles.Count -eq 0) {
+    throw "No event icons were found in $iconSourceDirectory."
+}
 
 $msbuild = Find-MSBuild
 $solution = Join-Path $RepoRoot 'Community Module Pack.sln'
@@ -138,7 +152,10 @@ if ($resourceCount -lt $validation.RequiredKeyCount) {
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
 try {
-    foreach ($entryName in @('Events Module.dll', 'manifest.json', 'ref/events.json')) {
+    $requiredEntries = @('Events Module.dll', 'manifest.json', 'ref/events.json') + @(
+        $iconFiles | ForEach-Object { "ref/textures/events/$($_.Name)" }
+    )
+    foreach ($entryName in $requiredEntries) {
         if ($null -eq $archive.GetEntry($entryName)) {
             throw "BHM package is missing $entryName."
         }
@@ -151,10 +168,12 @@ $result = [pscustomobject]@{
     DllPath       = $dll
     BhmPath       = $bhm
     ResourceCount = $resourceCount
+    IconCount     = $iconFiles.Count
     DllSha256     = (Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash
     BhmSha256     = (Get-FileHash -LiteralPath $bhm -Algorithm SHA256).Hash
 }
 
+Write-Host "BHM event icons: $($result.IconCount)"
 Write-Host "DLL SHA-256: $($result.DllSha256)"
 Write-Host "BHM SHA-256: $($result.BhmSha256)"
 $result

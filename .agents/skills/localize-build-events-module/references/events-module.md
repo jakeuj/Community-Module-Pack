@@ -1,14 +1,29 @@
-# Events Module 繁中化與建置參考
+# Events Module 繁中化、官方時程與發布參考
 
 ## 目錄
 
+- [資料來源架構](#資料來源架構)
 - [檔案與執行路徑](#檔案與執行路徑)
-- [資源鍵規則](#資源鍵規則)
-- [激戰-2-術語來源](#激戰-2-術語來源)
-- [單一 DLL 中文建置](#單一-dll-中文建置)
-- [驗證與目前基準](#驗證與目前基準)
-- [CI/CD 與 Release](#cicd-與-release)
+- [官方 Wiki MediaWiki API](#官方-wiki-mediawiki-api)
+- [資源鍵與術語](#資源鍵與術語)
+- [Parser、快取與 fallback](#parser快取與-fallback)
+- [圖示與穩定 ID](#圖示與穩定-id)
+- [驗證與建置](#驗證與建置)
+- [本機安裝與載入驗證](#本機安裝與載入驗證)
+- [CI、Release 與 GitHub Pages](#cirelease-與-github-pages)
 - [常見問題](#常見問題)
+
+## 資料來源架構
+
+執行時的資料優先順序固定為：
+
+1. 官方英文 Guild Wars 2 Wiki 的 `Widget:Event_timer/data.json` 最新有效 revision。
+2. 本機 `events-cache/official-event-timer.json` 的 last-known-good 官方資料。
+3. BHM 內建的 `ref/events.json`。
+
+官方 Widget 是活動時間、循環、Wiki 連結與 waypoint chatlink 的權威來源。`events.json` 用來比對既有繁中名稱、分類、圖示、提醒與其他呈現資料；官方來源成功時，不得用本地時間或 waypoint 覆蓋它。
+
+ArenaNet 的 Guild Wars 2 API v2 可提供 world boss ID 與其他遊戲資源，但沒有完整 Event timers Widget 的循環與 waypoint。模組語系也不會把請求切換到中國版服務；官方時程請求明確送往 `wiki.guildwars2.com`。
 
 ## 檔案與執行路徑
 
@@ -16,56 +31,118 @@
 |---|---|
 | 英文中性資源 | `Events Module/Properties/Resources.resx` |
 | 繁中資源 | `Events Module/Properties/Resources.zh.resx` |
-| 資源存取器 | `Events Module/Properties/Resources.Designer.cs` |
-| 活動資料 | `Events Module/ref/events.json` |
-| 模組專案 | `Events Module/Events Module.csproj` |
-| 套件資訊 | `Events Module/manifest.json` |
-| CI/Release | `.github/workflows/events-module-zh-tw.yml` |
+| 內建 fallback／呈現資料 | `Events Module/ref/events.json` |
+| 官方 Widget schema 與 parser | `Events Module/OfficialEventTimerData.cs` |
+| MediaWiki、快取與更新 | `Events Module/OfficialEventTimerService.cs` |
+| 官方／內建圖示比對 | `Events Module/OfficialEventIconMatcher.cs` |
+| 套用來源與顯示狀態 | `Events Module/EventsModule.cs`、`Events Module/Meta.cs` |
+| Parser 與圖示測試 | `Events Module/Tests/` |
+| 套件目錄宣告 | `Events Module/manifest.json` |
+| CI／Release | `.github/workflows/events-module-zh-tw.yml` |
+| GitHub Pages | `docs/index.html`、`docs/styles.css` |
+| 本機建置成品 | `artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm` |
+| Blish HUD 預設安裝檔 | `%Documents%/Guild Wars 2/addons/blishhud/modules/Events Module.bhm` |
 
-`EventsModule.cs` 以 `Resources.ResourceManager.GetString(meta.Name) ?? meta.Name` 顯示名稱，分類也採相同模式。因此任何 event `name` 或 `category` 缺少完全相同的資源鍵時，畫面會直接回退成英文。
+`Resources.Designer.cs` 不需要為動態事件 key 產生 property；畫面使用 `ResourceManager.GetString(key) ?? fallback` 查找。
 
-## 資源鍵規則
+## 官方 Wiki MediaWiki API
 
-繁中資源必須涵蓋以下集合：
+端點：
 
-1. `Resources.resx` 的全部 UI 鍵。
-2. `events.json` 中所有唯一的 `name`。
-3. `events.json` 中所有唯一的 `category`。
-
-只翻譯 `<value>`，不要翻譯 `<data name="...">`。即使來源含拼字錯誤也保留鍵，例如 `Moredremoth Invasion: Kessex Hils`；可在中文 value 修正顯示文字，但改動 key 會導致查找失敗。
-
-保留 `{0}` 等格式化佔位符。`Wiki`、`events.json`、URL、檔名與產品名稱可保留；若目標是全中文事件清單，事件名稱和分類的 value 不得殘留英文字母。
-
-不要手動改 `Resources.Designer.cs`。新增 `.resx` 鍵不需要新的強型別 property，因為活動名稱透過 `ResourceManager.GetString` 動態查找。
-
-## 激戰 2 術語來源
-
-翻譯事件名稱時依下列順序確認，不以英文逐字直譯作為定稿：
-
-1. [星岬島完整事件時間表](https://gw2.wishingstarmoye.com/gw2timer)：主要來源，涵蓋大型事件、階段、地圖、匯聚與新版資料片。頁面內容由 JavaScript 動態產生，應讀取頁面當下引用的 `gw2timer_new_data_*.js`，不要固定使用某個日期版本的檔名。
-2. [星岬島 BOSS 計時器](https://gw2.wishingstarmoye.com/gw2timerbox)：交叉確認核心世界王名稱；資料位於頁面引用的 `timerbox_bossdata.js`。
-3. Guild Wars 2 API：用 `lang=zh` 查地圖與其他可取得的專有名詞，再轉為台灣繁體。
-4. 星岬島資料庫與攻略頁：確認計時器沒列出的成就分類、地名、頭目及玩家慣稱。
-
-轉換原則：
-
-- 保留已建立的遊戲名稱，例如 `Ley-Line Anomaly` 使用「魔徑異常體」，不可另造「地脈異常體」。
-- 對玩家通常以頭目或階段稱呼的事件，優先使用辨識度高的名稱，例如「吞噬托」、「四門（八爪藤）」、「翠玉之海之戰（淑雯）」。
-- 簡體來源須人工轉成台灣繁體，並檢查異體字與地名，例如「翠玉」、「蒼翠邊界」、「納約斯外層」。
-- `Group Event`、`Meta Event` 等介面詞彙採遊戲語境的「團隊事件」、「大型事件」，不要泛化成「活動」。
-- 來源互相衝突時，優先採完整事件時間表目前顯示的名稱；必要時在括號補上另一個玩家常用稱呼，而不是自行音譯。
-
-## 單一 DLL 中文建置
-
-一般建置同時產生英文中性資源與 `zh` 衛星資源。專案的 `ChineseBuild` 條件則把 `Resources.zh.resx` 以 `Events_Module.Properties.Resources.resources` 嵌入主 DLL：
-
-```powershell
-/p:ChineseBuild=true
+```text
+https://wiki.guildwars2.com/api.php
 ```
 
-這是「只替換 DLL 也要顯示中文」的必要條件。正式安裝仍優先提供 BHM，因為 BHM 還包含 `manifest.json`、相依 DLL、`ref/events.json` 與 textures。
+查詢 title `Widget:Event_timer/data.json` 的 revisions，至少取得 `ids|timestamp|sha1`；需要內容時再加 `content` 與 `rvslots=main`。使用 `format=json&formatversion=2&maxlag=5`。無快取首次啟動可直接抓完整 revision，避免 metadata 加 content 兩次往返。
 
-使用 repo 腳本建置：
+要求：
+
+- 使用可辨識且不會被 Wiki 阻擋的 User-Agent；目前常數位於 `OfficialEventTimerEndpoint.UserAgent`。
+- 保持 15 秒 timeout，並區分模組卸載 cancellation 與 HTTP timeout。
+- 一般六小時檢查一次；啟動時讀取有效快取，手動更新時繞過 HTTP cache。
+- 只有 revision ID 或 SHA1 改變才重建事件；狀態列顯示 Widget 版本、revision、時間與 SHA1。
+- 只接受 `https://wiki.guildwars2.com/` Wiki URL，以及可解碼且第一 byte 為 `0x04` 的 waypoint chatlink。
+
+## 資源鍵與術語
+
+必要繁中資源是以下集合：
+
+1. `Resources.resx` 的全部 UI 與官方-only display keys。
+2. `events.json` 中所有唯一 `name` 與 `category`。
+
+官方事件轉成畫面資料時，實際 key 是 `template?.Name ?? definition.Name` 與 `template?.Category ?? definition.Category`。因此審核新 Widget 時要比對「模板匹配後的 runtime keys」，不能只看原始 segment 名稱。
+
+規則：
+
+- 只翻譯 `<value>`，不要改 `<data name="...">`。
+- 新增、且 `events.json` 沒有對應模板的官方 key 時，同時加入 `Resources.resx` 與 `Resources.zh.resx`。中性 value 保持英文，zh value 使用台灣繁中。
+- 即使來源 key 有拼字錯誤也原樣保留；修正顯示只改 zh value。
+- 保留 `{0}` 等格式化 token。事件 value 不應殘留非必要英文字母。
+- 不要手動修改 `Resources.Designer.cs`。
+
+術語來源依序為：
+
+1. [星岬島完整事件時間表](https://gw2.wishingstarmoye.com/gw2timer)：讀取頁面當下引用的 `gw2timer_new_data_*.js`，不要固定日期檔名。
+2. [星岬島 BOSS 計時器](https://gw2.wishingstarmoye.com/gw2timerbox)：交叉確認核心世界王名稱。
+3. Guild Wars 2 API `lang=zh`：查專有名詞，再人工轉成台灣繁體。
+4. 星岬島資料庫、攻略與玩家慣稱：補計時器未涵蓋的階段、地名和頭目。
+
+優先使用玩家能辨識的既有名稱，例如 `Ley-Line Anomaly` 使用「魔徑異常體」。簡體來源須人工檢查異體字、地名與遊戲內慣用譯名，不用英文逐字直譯定稿。
+
+## Parser、快取與 fallback
+
+`OfficialEventTimerParser` 必須：
+
+- 驗證 config version、group／segment／sequence 完整性、合理數量、duration、segment reference 與唯一 stable ID。
+- 先套 `partial`，再重複 `pattern` 展開完整 UTC 日循環。
+- 略過官方 Event timers 頁本身不顯示的季節性 group。
+- 產生 `wiki:{group}:{segment}` stable ID。
+- 不替沒有 chatlink 的 segment 製造 waypoint。
+
+快取必須在內容完整通過 parser 後才寫入，並以 temporary file 加 replace/copy 原子更新。壞掉或 schema 過期的快取直接忽略。網路、HTTP、MediaWiki、JSON 或 timeout 失敗時，有有效快取就使用快取；沒有才退回內建 `events.json`。
+
+來源狀態 UI 不應只顯示原始 `TaskCanceledException`。timeout 應顯示本地化秒數與 fallback 來源，卸載 cancellation 則安靜結束。
+
+## 圖示與穩定 ID
+
+官方事件優先沿用匹配的內建 template 圖示；找不到時，依 stable ID 套本地 64×64 透明 PNG，再嘗試名稱、地點或 waypoint matcher，最後使用安全的通用圖示。不可為了填空而套不相關頭目圖示。
+
+驗證：
+
+```powershell
+& "Events Module\Tests\ValidateEventIcons.ps1"
+& .agents\skills\localize-build-events-module\scripts\test-official-event-timer.ps1
+```
+
+前者檢查 PNG 尺寸、alpha、透明角落、可見覆蓋率與 chroma-key；後者也測試 stable-ID 圖示 mapping。修改 `wiki:{group}:{segment}` 會影響已追蹤事件與本地圖示 mapping，必須保留 ID 或提供設定遷移。
+
+## 驗證與建置
+
+繁中 coverage：
+
+```powershell
+& .agents\skills\localize-build-events-module\scripts\validate-events-localization.ps1
+```
+
+Parser 離線測試與 live audit：
+
+```powershell
+& .agents\skills\localize-build-events-module\scripts\test-official-event-timer.ps1
+& .agents\skills\localize-build-events-module\scripts\test-official-event-timer.ps1 -Live
+```
+
+`-Live` 會查目前 Wiki revision，並驗證幾個已知 stable ID 的 waypoint；網路不可用時，離線測試仍須通過。
+
+建立本參考版本時的基準為：
+
+- 104 筆內建活動資料。
+- 95 個唯一內建活動名稱／分類。
+- 172 個必要繁中資源鍵。
+- 官方 Widget v5.2 展開 104 個可顯示事件。
+
+官方與內建資料都可能增加，以腳本與 live audit 的動態輸出為準，不要把這些數字當永久 schema。
+
+建置：
 
 ```powershell
 & .agents\skills\localize-build-events-module\scripts\build-events-zh-tw.ps1
@@ -78,64 +155,86 @@ artifacts/Events-and-Metas-Observer-zh-TW/Events Module.dll
 artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm
 ```
 
-## 驗證與目前基準
+`ChineseBuild=true` 會把 `Resources.zh.resx` 以中性 resources 嵌入主 DLL。正式交付 BHM，因為它還包含 manifest、相依 DLL、`events.json` 與 textures。
 
-執行：
+建置腳本也會執行 `ValidateEventIcons.ps1`，確認來源事件圖示符合規格，並逐一檢查 BHM 內存在對應的 `ref/textures/events/*.png`。成功結果會回報 `IconCount`；不可只因 DLL 編譯成功就視為圖示已封裝。
+
+## 本機安裝與載入驗證
+
+建置成品不會自動成為 Blish HUD 正在使用的模組。先以唯讀模式比對建置檔和已安裝檔：
 
 ```powershell
-& .agents\skills\localize-build-events-module\scripts\validate-events-localization.ps1
+& .agents\skills\localize-build-events-module\scripts\install-events-zh-tw.ps1 -CheckOnly
 ```
 
-腳本動態檢查缺漏、重複鍵、事件 value 英文殘留及 `{0}` 佔位符。建立本技能時的 repo 基準為：
+比對結果包含雙方 SHA-256、事件圖示數量、目的檔是否存在，以及 Blish HUD 是否仍在執行。預設目的地透過 `[Environment]::GetFolderPath('MyDocuments')` 取得，會正確跟隨 OneDrive 等 Windows Documents 重新導向；不要假設安裝路徑一定在 `$env:USERPROFILE\Documents`。
 
-- 104 筆活動資料。
-- 95 個唯一活動名稱／分類。
-- 114 個必要繁中資源鍵。
+只有使用者明確要求安裝，而且 Blish HUD 已完全結束時才執行：
 
-活動資料增加後，以腳本動態結果為準，並同步調整 CI 中硬編碼的最低資源數量檢查。
+```powershell
+& .agents\skills\localize-build-events-module\scripts\install-events-zh-tw.ps1
+```
 
-## CI/CD 與 Release
+安裝腳本會：
 
-`.github/workflows/events-module-zh-tw.yml` 在以下情況執行：
+1. 驗證來源 BHM 至少含 manifest、主 DLL、`ref/events.json`，以及目前來源目錄中的全部事件圖示。
+2. 偵測 Blish HUD process；仍在執行時立即拒絕，不會自動關閉程式，也不會修改檔案。
+3. 為既有 BHM 建立帶時間戳的 `.bak` 備份。
+4. 先複製到同目錄的唯一暫存檔並驗證雜湊，再替換目的檔。
+5. 重新讀取目的檔，確認最終 SHA-256 與事件圖示數量。
 
-- `master` 或 PR 變更 `Events Module/**`：驗證並建置 workflow artifact。
-- 推送 `events-zh-tw-vX.Y.Z-fork.N` 標籤：驗證、建置並建立 GitHub Release。
-- 手動執行 workflow：可指定完整 Fork 版號；留空時讀取 `Events Module/manifest.json` 的 `X.Y.Z`，並自動遞增相同基礎版號最新的 `fork.N`。
+實機驗收至少需要：建置與安裝檔 SHA-256 相同、安裝檔內可見預期圖示、替換後重新啟動 Blish HUD。若仍異常，再檢查最新的 `logs/blishhud.*.log`；舊程序的畫面不能證明新 BHM 已載入。
 
-Fork Release 不沿用上游的裸 `vX.Y.Z` 或舊的 `events-zh-tw-vX.Y.Z`，避免同步上游標籤時發生版號語意或名稱衝突。標準格式例如：
+## CI、Release 與 GitHub Pages
+
+`.github/workflows/events-module-zh-tw.yml` 會在 `master`／PR 的 Events Module 變更時跑 coverage、圖示、parser、建置與封裝檢查。手動 dispatch 或 `events-zh-tw-v*` tag 會再建立標籤、產生 release notes 並發布 BHM。
+
+Fork tag 格式：
 
 ```text
-events-zh-tw-v1.0.9-fork.1
+events-zh-tw-vX.Y.Z-fork.N
 ```
 
-`X.Y.Z` 對應目前 Events Module manifest 的上游基礎版號；只有本 Fork 的修改才遞增 `fork.N`。上游升版後，新的基礎版號會從 `fork.1` 重新開始。
+`X.Y.Z` 跟隨 manifest 的上游基礎版號；Fork 修改只遞增 `fork.N`。只有使用者明確要求發布才推 tag／Release。先推 `master` 並等一般 CI 通過，再手動 dispatch；留空版號可自動選下一個 Fork 版號。發布後核對 tag 指向本次 commit，下載公開 BHM 並比對 GitHub digest／SHA-256。
 
-只有使用者明確要求發布時才建立標籤。發布前先讓 `master` CI 通過；一般建議直接手動執行 workflow 並留空版號，由 CI 建立下一個 Fork 標籤與 Release。
+GitHub Pages 使用 fork 的 `master:/docs`，網址為 `https://gw.jakeuj.com/`。只有使用者要求更新網站時才修改與部署。功能或 coverage 有重大變更時，更新 `docs/index.html` 文案與統計；下載按鈕使用不綁版號的：
 
-GitHub 可能把 Release 資產檔名中的空格正規化為點號，例如 `Events.Module.bhm`；副檔名與內容不受影響。
+```text
+https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm
+```
+
+推送後等待 Pages build 指向本次 commit 且狀態為 `built`，再從正式網域驗證新內容與下載連結。
 
 ## 常見問題
 
 ### 畫面仍有英文
 
-先執行 coverage 腳本。通常是 `events.json` 新增 `name` 或 `category`，但 `Resources.zh.resx` 尚未加入完全相同的 key。不要只看舊的中性資源檔。
+先跑 coverage，再確認該事件實際採用內建 template key 還是官方 segment key。新官方-only key 要同時加入 neutral 與 zh resx；只翻舊 `events.json` 不足以涵蓋 live Widget。
+
+### 座標或時間跟官方 Wiki 不同
+
+查看模組設定的資料來源狀態、Widget 版本、revision 與 SHA1。確認目前不是 last-known-good cache 或 bundled fallback；不要用中文第三方網站的時間／座標覆寫官方 Widget。
+
+### HTTP 403
+
+確認請求送到 `https://wiki.guildwars2.com/api.php`，並帶有非預設、可辨識的 User-Agent。不要把語系選擇實作成切換 Wiki 或 API host。
+
+### 顯示 task was canceled
+
+區分模組卸載 cancellation 與 15 秒 HTTP timeout。timeout 應回退快取／內建資料並顯示本地化狀態，不直接把例外文字放到 UI。
+
+### 沒有 waypoint 按鈕
+
+先看官方 segment 是否有合法 chatlink。官方未提供時屬預期行為，不可從模糊名稱猜 waypoint。
 
 ### 找不到 .NET Framework 4.7.2 參考組件
 
-建置腳本會使用 NuGet 的 `Microsoft.NETFramework.ReferenceAssemblies.net472` 1.0.3。手動建置時應傳入該套件的 `build/` 作為 `TargetFrameworkRootPath`。
-
-### 缺少 netstandard 參考
-
-不要只使用 `FrameworkPathOverride`；它可能漏掉 `Facades/netstandard.dll`。使用完整 `TargetFrameworkRootPath`，讓 MSBuild 解析 targeting pack 與 Facades。
-
-### 只產生衛星資源 DLL
-
-確認 MSBuild 參數包含 `/p:ChineseBuild=true`。一般本地化建置的 `zh/Events Module.resources.dll` 不能取代單一中文主 DLL。
+使用 NuGet `Microsoft.NETFramework.ReferenceAssemblies.net472` 1.0.3 的 `build/` 作為 `TargetFrameworkRootPath`。不要只設 `FrameworkPathOverride`，否則可能漏掉 `Facades/netstandard.dll`。技能內測試與建置腳本會自動處理。
 
 ### 沒有產生 BHM
 
-先從 `Community Module Pack.sln` 還原 `packages.config`，確認 `packages/BlishHUD.0.11.0/build/BlishHUD.targets` 存在。這個舊式專案若直接對 csproj 執行 MSBuild restore，NuGet 會因缺少 `SolutionDir` 失敗。Blish HUD build targets 負責組合 BHM。
+先從 `Community Module Pack.sln` 還原 `packages.config`，確認 `packages/BlishHUD.0.11.0/build/BlishHUD.targets` 存在。舊式 csproj 單獨 restore 可能因缺少 `SolutionDir` 失敗。
 
 ### 替換後仍看到舊內容
 
-完全結束 Blish HUD，再替換 Modules 目錄內的 BHM 或已解壓 DLL；重新啟動後確認啟用的是新版本。
+先執行安裝腳本的 `-CheckOnly`，比較建置與安裝檔的完整路徑、大小、最後修改時間、SHA-256 與 `ref/textures/events/` 項目。雜湊不同代表只完成建置、尚未安裝；安裝檔沒有事件圖示則代表仍是舊套件。完全結束 Blish HUD 後使用安全安裝腳本替換，再重新啟動並確認雜湊相同。不要在程序仍載入 DLL/BHM 時覆寫，也不要只靠檔名判斷版本。

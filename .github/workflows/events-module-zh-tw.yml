@@ -137,6 +137,12 @@ jobs:
 
           Write-Host "Validated $($events.Count) event records and $($eventStrings.Count) unique event strings."
 
+      - name: Validate event icons
+        shell: pwsh
+        run: |
+          & "Events Module\Tests\ValidateEventIcons.ps1"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Test official event timer parser
         shell: pwsh
         run: |
@@ -187,16 +193,34 @@ jobs:
           $enumerator = $reader.GetEnumerator()
           while ($enumerator.MoveNext()) { $resourceCount++ }
           $reader.Close()
-          if ($resourceCount -lt 114) { throw "Expected at least 114 embedded resources, found $resourceCount." }
+          if ($resourceCount -lt 172) { throw "Expected at least 172 embedded resources, found $resourceCount." }
 
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
+          $eventIcons = @(
+            "day.png",
+            "dusk.png",
+            "night.png",
+            "dawn.png",
+            "tournament-balthazar.png",
+            "tournament-grenth.png",
+            "tournament-melandru.png",
+            "tournament-lyssa.png",
+            "invasion-awakened.png",
+            "invasion-scarlet.png",
+            "shackles-of-the-ancients.png"
+          )
           try {
             if ($null -eq $archive.GetEntry("Events Module.dll")) {
               throw "BHM does not contain Events Module.dll."
             }
             if ($null -eq $archive.GetEntry("ref/events.json")) {
               throw "BHM does not contain ref/events.json."
+            }
+            foreach ($icon in $eventIcons) {
+              if ($null -eq $archive.GetEntry("ref/textures/events/$icon")) {
+                throw "BHM does not contain ref/textures/events/$icon."
+              }
             }
           } finally {
             $archive.Dispose()
