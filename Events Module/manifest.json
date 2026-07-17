@@ -9,6 +9,7 @@
   "dependencies": {
     "bh.blishhud": ">=0.11.0"
   },
+  "directories": [ "events-cache" ],
   "url": "https://github.com/blish-hud/Blish-HUD",
   "contributors": [
     {

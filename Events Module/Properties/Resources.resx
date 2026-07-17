@@ -397,4 +397,80 @@ Right click to dismiss.</value>
     <value>Watched Events</value>
     <comment>Event category</comment>
   </data>
+  <data name="Set_notification_position" xml:space="preserve">
+    <value>Set Notification Position</value>
+  </data>
+  <data name="Official_timer_data" xml:space="preserve">
+    <value>Event timer data</value>
+  </data>
+  <data name="Refresh_official_event_timer" xml:space="preserve">
+    <value>Refresh official event timer</value>
+  </data>
+  <data name="Official_timer_refreshing" xml:space="preserve">
+    <value>Checking the official Guild Wars 2 Wiki...</value>
+  </data>
+  <data name="Official_timer_source_live" xml:space="preserve">
+    <value>Official Wiki {0} — revision {1} ({2:g}), checked {3:g}, SHA1 {4}</value>
+  </data>
+  <data name="Official_timer_source_cache" xml:space="preserve">
+    <value>Last known good official Wiki data {0} — revision {1} ({2:g}), checked {3:g}, SHA1 {4}</value>
+  </data>
+  <data name="Official_timer_source_bundled" xml:space="preserve">
+    <value>Bundled events.json fallback — official Wiki unavailable</value>
+  </data>
+  <data name="Official_timer_source_bundled_error" xml:space="preserve">
+    <value>Bundled events.json fallback — official Wiki unavailable: {0}</value>
+  </data>
+  <data name="Official_timer_source_bundled_timeout" xml:space="preserve">
+    <value>Bundled events.json fallback — official Wiki request exceeded {0} seconds</value>
+  </data>
+  <data name="Core Tyria" xml:space="preserve"><value>Core Tyria</value></data>
+  <data name="Living World Season 2" xml:space="preserve"><value>Living World Season 2</value></data>
+  <data name="Heart of Thorns" xml:space="preserve"><value>Heart of Thorns</value></data>
+  <data name="Living World Season 3" xml:space="preserve"><value>Living World Season 3</value></data>
+  <data name="Path of Fire" xml:space="preserve"><value>Path of Fire</value></data>
+  <data name="Living World Season 4" xml:space="preserve"><value>Living World Season 4</value></data>
+  <data name="The Icebrood Saga" xml:space="preserve"><value>The Icebrood Saga</value></data>
+  <data name="End of Dragons" xml:space="preserve"><value>End of Dragons</value></data>
+  <data name="Secrets of the Obscure" xml:space="preserve"><value>Secrets of the Obscure</value></data>
+  <data name="Janthir Wilds" xml:space="preserve"><value>Janthir Wilds</value></data>
+  <data name="Visions of Eternity" xml:space="preserve"><value>Visions of Eternity</value></data>
+  <data name="Public Instances" xml:space="preserve"><value>Public Instances</value></data>
+  <data name="Special Events" xml:space="preserve"><value>Special Events</value></data>
+  <data name="Golem Mark II" xml:space="preserve"><value>Golem Mark II</value></data>
+  <data name="Awakened Invasion" xml:space="preserve"><value>Awakened Invasion</value></data>
+  <data name="Defeat Scarlet's minions" xml:space="preserve"><value>Defeat Scarlet's minions</value></data>
+  <data name="Automated Tournament: Balthazar's Brawl" xml:space="preserve"><value>Automated Tournament: Balthazar's Brawl</value></data>
+  <data name="Automated Tournament: Grenth's Game" xml:space="preserve"><value>Automated Tournament: Grenth's Game</value></data>
+  <data name="Automated Tournament: Melandru's Matchup" xml:space="preserve"><value>Automated Tournament: Melandru's Matchup</value></data>
+  <data name="Automated Tournament: Lyssa's Legions" xml:space="preserve"><value>Automated Tournament: Lyssa's Legions</value></data>
+  <data name="Pylons" xml:space="preserve"><value>Pylons</value></data>
+  <data name="Challenges" xml:space="preserve"><value>Challenges</value></data>
+  <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Help the Outposts" xml:space="preserve"><value>Help the Outposts</value></data>
+  <data name="Prep" xml:space="preserve"><value>Prep</value></data>
+  <data name="Start advancing on the Blighting Towers" xml:space="preserve"><value>Start advancing on the Blighting Towers</value></data>
+  <data name="(continued)" xml:space="preserve"><value>(continued)</value></data>
+  <data name="Saidra's Haven" xml:space="preserve"><value>Saidra's Haven</value></data>
+  <data name="New Loamhurst" xml:space="preserve"><value>New Loamhurst</value></data>
+  <data name="Noran's Homestead" xml:space="preserve"><value>Noran's Homestead</value></data>
+  <data name="Rounds 1 to 3" xml:space="preserve"><value>Rounds 1 to 3</value></data>
+  <data name="Pinata/Reset" xml:space="preserve"><value>Pinata/Reset</value></data>
+  <data name="Buried Treasure" xml:space="preserve"><value>Buried Treasure</value></data>
+  <data name="The Path to Ascension: Augury Rock" xml:space="preserve"><value>The Path to Ascension: Augury Rock</value></data>
+  <data name="Palawadan" xml:space="preserve"><value>Palawadan</value></data>
+  <data name="Escorts" xml:space="preserve"><value>Escorts</value></data>
+  <data name="Ooze Pits" xml:space="preserve"><value>Ooze Pits</value></data>
+  <data name="Metal Concert" xml:space="preserve"><value>Metal Concert</value></data>
+  <data name="Drakkar and Spirits of the Wild" xml:space="preserve"><value>Drakkar and Spirits of the Wild</value></data>
+  <data name="Defend Jora's Keep" xml:space="preserve"><value>Defend Jora's Keep</value></data>
+  <data name="Shards and Construct" xml:space="preserve"><value>Shards and Construct</value></data>
+  <data name="Icebrood Champions" xml:space="preserve"><value>Icebrood Champions</value></data>
+  <data name="Target Practice &amp; Fly by Night" xml:space="preserve"><value>Target Practice &amp; Fly by Night</value></data>
+  <data name="Hammerhart Rumble!" xml:space="preserve"><value>Hammerhart Rumble!</value></data>
+  <data name="Shackles of the Ancients" xml:space="preserve"><value>Shackles of the Ancients</value></data>
+  <data name="Twisted Marionette" xml:space="preserve"><value>Twisted Marionette</value></data>
+  <data name="Battle For Lion's Arch" xml:space="preserve"><value>Battle For Lion's Arch</value></data>
+  <data name="Dragonstorm" xml:space="preserve"><value>Dragonstorm</value></data>
+  <data name="Tower of Nightmares" xml:space="preserve"><value>Tower of Nightmares</value></data>
 </root>

@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Blish_HUD;
 using Blish_HUD.Controls;
@@ -21,6 +22,8 @@ namespace Events_Module {
     [Export(typeof(Module))]
     public class EventsModule : Module {
 
+        private static readonly Logger Logger = Logger.GetLogger<EventsModule>();
+
         internal static EventsModule ModuleInstance;
 
         // Service Managers
@@ -37,8 +40,10 @@ namespace Events_Module {
         private string _ecHidden        = Resources.Hidden_Events;
 
         private const int TIMER_RECALC_RATE = 5;
+        private static readonly TimeSpan OfficialRefreshInterval = TimeSpan.FromHours(6);
 
         private List<DetailsButton> _displayedEvents;
+        private readonly Dictionary<Meta, EventHandler<EventArgs>> _scheduleHandlers = new Dictionary<Meta, EventHandler<EventArgs>>();
 
         private WindowTab _eventsTab;
 
@@ -52,6 +57,19 @@ namespace Events_Module {
 
         private Texture2D _textureWatch;
         private Texture2D _textureWatchActive;
+
+        private IReadOnlyList<Meta> _bundledEvents = new List<Meta>();
+        private OfficialEventTimerService _officialEventTimerService;
+        private CancellationTokenSource _officialRefreshCancellation;
+        private Task<OfficialEventTimerSourceResult> _officialRefreshTask;
+        private DateTime _nextOfficialRefreshUtc = DateTime.MaxValue;
+        private long _officialRevisionId;
+        private string _officialSha1;
+        private bool _usingBundledEvents = true;
+
+        public event EventHandler SourceStatusChanged;
+
+        public string SourceStatus { get; private set; } = string.Empty;
 
         public bool NotificationsEnabled {
             get => _settingNotificationsEnabled.Value;
@@ -95,7 +113,25 @@ namespace Events_Module {
         }
 
         protected override async Task LoadAsync() {
-            await Meta.Load(this.ContentsManager);
+            _bundledEvents = await Meta.LoadBundled(this.ContentsManager);
+            Meta.SetEvents(_bundledEvents);
+
+            _officialRefreshCancellation = new CancellationTokenSource();
+
+            try {
+                string cacheDirectory = DirectoriesManager.GetFullDirectoryPath("events-cache");
+                _officialEventTimerService = new OfficialEventTimerService(cacheDirectory);
+                OfficialEventTimerSourceResult officialResult = await _officialEventTimerService.RefreshAsync(
+                    force: false,
+                    cancellationToken: _officialRefreshCancellation.Token
+                );
+                ApplyOfficialResult(officialResult);
+            } catch (Exception exception) {
+                Logger.Warn(exception, "Failed to initialize the official Guild Wars 2 Wiki event timer source.");
+                UseBundledStatus(exception.Message);
+            }
+
+            _nextOfficialRefreshUtc = DateTime.UtcNow + OfficialRefreshInterval;
             LoadTextures();
 
             _tabPanel = BuildSettingPanel(GameService.Overlay.BlishHudWindow.ContentRegion);
@@ -119,6 +155,14 @@ namespace Events_Module {
             var choseLocation = new NotificationMover(new ScreenRegion("Notifications", _settingNotificationsPosition, tempSizeSetting));
             choseLocation.Parent = GameService.Graphics.SpriteScreen;
             choseLocation.Size = GameService.Graphics.SpriteScreen.ContentRegion.Size;
+        }
+
+        internal void RequestOfficialRefresh() {
+            StartOfficialRefresh(force: true);
+        }
+
+        internal static string Localize(string key, string fallback) {
+            return Resources.ResourceManager.GetString(key) ?? fallback;
         }
 
         private Panel BuildSettingPanel(Rectangle panelBounds) {
@@ -184,8 +228,14 @@ namespace Events_Module {
 
             //eventPanel.SuspendLayout();
 
+            var metaByButton = new Dictionary<DetailsButton, Meta>();
+
             foreach (var meta in Meta.Events) {
-                var setting = _watchCollection.DefineSetting(@"watchEvent:" + meta.Name, true);
+                var legacySetting = _watchCollection.DefineSetting(@"watchEvent:" + meta.Name, true);
+                string stableId = string.IsNullOrWhiteSpace(meta.StableId)
+                    ? "local:" + meta.Category + ":" + meta.Name
+                    : meta.StableId;
+                var setting = _watchCollection.DefineSetting(@"watchEventId:" + stableId, legacySetting.Value);
 
                 meta.IsWatched = setting.Value;
 
@@ -198,6 +248,8 @@ namespace Events_Module {
                     HighlightType    = DetailsHighlightType.LightHighlight,
                     ShowToggleButton = true
                 };
+
+                metaByButton.Add(es2, meta);
 
                 if (meta.Texture != null && meta.Texture.HasTexture) {
                     es2.Icon = meta.Texture;
@@ -265,13 +317,15 @@ namespace Events_Module {
                     setting.Value  = toggleFollowBttn.Checked;
                 };
 
-                meta.OnNextRunTimeChanged += delegate {
+                EventHandler<EventArgs> scheduleChanged = delegate {
                     UpdateSort(ddSortMethod, EventArgs.Empty);
                     SortEventPanel(ddSortMethod.SelectedItem, ref eventPanel);
 
                     nextTimeLabel.Text             = meta.NextTime.ToShortTimeString();
                     nextTimeLabel.BasicTooltipText = GetTimeDetails(meta);
                 };
+                meta.OnNextRunTimeChanged += scheduleChanged;
+                _scheduleHandlers[meta] = scheduleChanged;
 
                 _displayedEvents.Add(es2);
             }
@@ -294,9 +348,10 @@ namespace Events_Module {
 
             var evWatched = eventCategories.AddMenuItem(_ecWatchedEvents);
             evWatched.Click += delegate {
-                eventPanel.FilterChildren<DetailsButton>(db =>
-                    Meta.Events.Find(m => db.Text == (Resources.ResourceManager.GetString(m.Name) ?? m.Name)).IsWatched
-                );
+                eventPanel.FilterChildren<DetailsButton>(db => {
+                    Meta watchedMeta;
+                    return metaByButton.TryGetValue(db, out watchedMeta) && watchedMeta.IsWatched;
+                });
             };
 
             foreach (IGrouping<string, Meta> e in submetas) {
@@ -355,7 +410,10 @@ namespace Events_Module {
             );
 
             msg.Append(Environment.NewLine + Resources.Upcoming_Event_Times_);
-            foreach (var utime in assignedMeta.Times.Select(time => time > DateTime.UtcNow ? time.ToLocalTime() : time.ToLocalTime() + 1.Days()).OrderBy(time => time.Ticks).ToList()) {
+            foreach (var utime in assignedMeta.Times.Select(time => {
+                DateTime upcoming = DateTime.Today + time.ToLocalTime().TimeOfDay;
+                return upcoming >= DateTime.Now ? upcoming : upcoming + 1.Days();
+            }).OrderBy(time => time.Ticks).ToList()) {
                 msg.Append(Environment.NewLine + utime.ToShortTimeString());
             }
 
@@ -393,19 +451,52 @@ namespace Events_Module {
         private double _elapsedSeconds = 0;
 
         protected override void Update(GameTime gameTime) {
+            CompleteOfficialRefreshIfReady();
+
             _elapsedSeconds += gameTime.ElapsedGameTime.TotalSeconds;
 
             if (_elapsedSeconds > TIMER_RECALC_RATE) {
                 Meta.UpdateEventSchedules();
+
+                if (DateTime.UtcNow >= _nextOfficialRefreshUtc) {
+                    StartOfficialRefresh(force: false);
+                }
+
                 _elapsedSeconds = 0;
             }
         }
 
         protected override void Unload() {
-            ModuleInstance = null;
+            CancellationTokenSource cancellation = _officialRefreshCancellation;
+            OfficialEventTimerService service = _officialEventTimerService;
+            Task<OfficialEventTimerSourceResult> refreshTask = _officialRefreshTask;
+
+            cancellation?.Cancel();
+            if (refreshTask != null && !refreshTask.IsCompleted) {
+                refreshTask.ContinueWith(completed => {
+                    if (completed.IsFaulted) {
+                        Logger.Warn(completed.Exception, "The official event timer refresh ended during module unload.");
+                    }
+                    service?.Dispose();
+                    cancellation?.Dispose();
+                }, TaskScheduler.Default);
+            } else {
+                if (refreshTask?.IsFaulted == true) {
+                    Logger.Warn(refreshTask.Exception, "The official event timer refresh ended during module unload.");
+                }
+                service?.Dispose();
+                cancellation?.Dispose();
+            }
+
+            _officialRefreshTask = null;
+            _officialEventTimerService = null;
+            _officialRefreshCancellation = null;
 
             GameService.Overlay.UserLocaleChanged -= ChangeLocalization;
-            GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
+            UnsubscribeScheduleHandlers();
+            if (_eventsTab != null) GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
+
+            ModuleInstance = null;
         }
 
         private IList<string> GetOrderedNextUpEventNames() {
@@ -418,18 +509,127 @@ namespace Events_Module {
             _ddAlphabetical = Resources.Alphabetical;
             _ddNextup = Resources.Next_Up;
             _ecAllevents = Resources.All_Events;
+            _ecWatchedEvents = Resources.Watched_Events;
             _ecHidden = Resources.Hidden_Events;
 
-            //TODO: Implement as View so panel reloads automatically.
-            if (_tabPanel != null) {
-                _tabPanel?.Dispose();
-                _tabPanel = BuildSettingPanel(GameService.Overlay.BlishHudWindow.ContentRegion);
+            RebuildEventTab();
+        }
 
-                if (_eventsTab != null)
-                    GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
+        private void StartOfficialRefresh(bool force) {
+            if (_officialEventTimerService == null || _officialRefreshCancellation == null || _officialRefreshTask != null) return;
 
-                _eventsTab = GameService.Overlay.BlishHudWindow.AddTab(Resources.Events_and_Metas, this.ContentsManager.GetTexture(@"textures\1466345.png"), _tabPanel);
+            SetSourceStatus(Localize("Official_timer_refreshing", "Checking the official Guild Wars 2 Wiki..."));
+            _officialRefreshTask = _officialEventTimerService.RefreshAsync(force, _officialRefreshCancellation.Token);
+            _nextOfficialRefreshUtc = DateTime.UtcNow + OfficialRefreshInterval;
+        }
+
+        private void CompleteOfficialRefreshIfReady() {
+            if (_officialRefreshTask == null || !_officialRefreshTask.IsCompleted) return;
+
+            Task<OfficialEventTimerSourceResult> completedTask = _officialRefreshTask;
+            _officialRefreshTask = null;
+
+            try {
+                if (completedTask.IsCanceled) return;
+
+                OfficialEventTimerSourceResult result = completedTask.GetAwaiter().GetResult();
+                bool dataChanged = ApplyOfficialResult(result);
+                if (dataChanged) RebuildEventTab();
+            } catch (OperationCanceledException) {
+                // Module unload cancels an in-flight request.
+            } catch (Exception exception) {
+                Logger.Warn(exception, "Failed to apply refreshed Guild Wars 2 Wiki event timer data.");
+                if (_usingBundledEvents) UseBundledStatus(exception.Message);
             }
+        }
+
+        private bool ApplyOfficialResult(OfficialEventTimerSourceResult result) {
+            if (result?.Events == null || result.Events.Count == 0) {
+                if (_officialRevisionId == 0) {
+                    Meta.SetEvents(_bundledEvents);
+                    _usingBundledEvents = true;
+                    if (result?.TimedOut == true) {
+                        UseBundledTimeoutStatus();
+                    } else {
+                        UseBundledStatus(result?.Error);
+                    }
+                }
+                return false;
+            }
+
+            bool dataChanged = _usingBundledEvents || result.RevisionId != _officialRevisionId ||
+                               !string.Equals(result.Sha1, _officialSha1, StringComparison.OrdinalIgnoreCase);
+
+            if (dataChanged) {
+                Meta.SetEvents(Meta.CreateOfficialEvents(result.Events, _bundledEvents));
+                _officialRevisionId = result.RevisionId;
+                _officialSha1 = result.Sha1;
+                _usingBundledEvents = false;
+            }
+
+            string statusKey = result.Source == OfficialEventTimerSource.OfficialWiki
+                ? "Official_timer_source_live"
+                : "Official_timer_source_cache";
+            string fallback = result.Source == OfficialEventTimerSource.OfficialWiki
+                ? "Official Wiki {0} — revision {1} ({2:g}), checked {3:g}, SHA1 {4}"
+                : "Last known good official Wiki data {0} — revision {1} ({2:g}), checked {3:g}, SHA1 {4}";
+            SetSourceStatus(string.Format(Localize(statusKey, fallback),
+                                          result.WidgetVersion,
+                                          result.RevisionId,
+                                          result.RevisionTimestampUtc.ToLocalTime(),
+                                          result.LastCheckedUtc.ToLocalTime(),
+                                          result.Sha1));
+            return dataChanged;
+        }
+
+        private void UseBundledStatus(string error = null) {
+            if (string.IsNullOrWhiteSpace(error)) {
+                SetSourceStatus(Localize("Official_timer_source_bundled", "Bundled events.json fallback — official Wiki unavailable"));
+                return;
+            }
+
+            SetSourceStatus(string.Format(
+                Localize("Official_timer_source_bundled_error", "Bundled events.json fallback — official Wiki unavailable: {0}"),
+                error
+            ));
+        }
+
+        private void UseBundledTimeoutStatus() {
+            SetSourceStatus(string.Format(
+                Localize("Official_timer_source_bundled_timeout", "Bundled events.json fallback — official Wiki request exceeded {0} seconds"),
+                OfficialEventTimerService.RequestTimeoutSeconds
+            ));
+        }
+
+        private void SetSourceStatus(string status) {
+            if (string.Equals(SourceStatus, status, StringComparison.Ordinal)) return;
+            SourceStatus = status;
+            SourceStatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void RebuildEventTab() {
+            if (_tabPanel == null) return;
+
+            UnsubscribeScheduleHandlers();
+            _tabPanel.Dispose();
+            _displayedEvents.Clear();
+            _tabPanel = BuildSettingPanel(GameService.Overlay.BlishHudWindow.ContentRegion);
+
+            if (_eventsTab != null) {
+                GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
+                _eventsTab = GameService.Overlay.BlishHudWindow.AddTab(
+                    Resources.Events_and_Metas,
+                    this.ContentsManager.GetTexture(@"textures\1466345.png"),
+                    _tabPanel
+                );
+            }
+        }
+
+        private void UnsubscribeScheduleHandlers() {
+            foreach (var handler in _scheduleHandlers) {
+                handler.Key.OnNextRunTimeChanged -= handler.Value;
+            }
+            _scheduleHandlers.Clear();
         }
 
     }

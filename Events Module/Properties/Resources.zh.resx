@@ -355,4 +355,80 @@
   <data name="White Mantle Control: Saidra's Haven" xml:space="preserve">
     <value>白斗篷控制：塞德拉避難所</value>
   </data>
+  <data name="Set_notification_position" xml:space="preserve">
+    <value>設定通知位置</value>
+  </data>
+  <data name="Official_timer_data" xml:space="preserve">
+    <value>事件計時器資料</value>
+  </data>
+  <data name="Refresh_official_event_timer" xml:space="preserve">
+    <value>立即更新官方事件計時器</value>
+  </data>
+  <data name="Official_timer_refreshing" xml:space="preserve">
+    <value>正在檢查 Guild Wars 2 官方 Wiki…</value>
+  </data>
+  <data name="Official_timer_source_live" xml:space="preserve">
+    <value>官方 Wiki {0} — 修訂版 {1}（{2:g}），檢查時間 {3:g}，SHA1 {4}</value>
+  </data>
+  <data name="Official_timer_source_cache" xml:space="preserve">
+    <value>上次成功的官方 Wiki 資料 {0} — 修訂版 {1}（{2:g}），檢查時間 {3:g}，SHA1 {4}</value>
+  </data>
+  <data name="Official_timer_source_bundled" xml:space="preserve">
+    <value>內建 events.json 備援 — 目前無法使用官方 Wiki</value>
+  </data>
+  <data name="Official_timer_source_bundled_error" xml:space="preserve">
+    <value>內建 events.json 備援 — 目前無法使用官方 Wiki：{0}</value>
+  </data>
+  <data name="Official_timer_source_bundled_timeout" xml:space="preserve">
+    <value>內建 events.json 備援 — 官方 Wiki 連線超過 {0} 秒</value>
+  </data>
+  <data name="Core Tyria" xml:space="preserve"><value>核心泰瑞亞</value></data>
+  <data name="Living World Season 2" xml:space="preserve"><value>動態世界第 2 季</value></data>
+  <data name="Heart of Thorns" xml:space="preserve"><value>決戰邁古瑪</value></data>
+  <data name="Living World Season 3" xml:space="preserve"><value>動態世界第 3 季</value></data>
+  <data name="Path of Fire" xml:space="preserve"><value>烈焰征途</value></data>
+  <data name="Living World Season 4" xml:space="preserve"><value>動態世界第 4 季</value></data>
+  <data name="The Icebrood Saga" xml:space="preserve"><value>冰巢傳說</value></data>
+  <data name="End of Dragons" xml:space="preserve"><value>巨龍絕境</value></data>
+  <data name="Secrets of the Obscure" xml:space="preserve"><value>天界之謎</value></data>
+  <data name="Janthir Wilds" xml:space="preserve"><value>珍瑟荒野</value></data>
+  <data name="Visions of Eternity" xml:space="preserve"><value>永恆願景</value></data>
+  <data name="Public Instances" xml:space="preserve"><value>公共副本</value></data>
+  <data name="Special Events" xml:space="preserve"><value>特殊活動</value></data>
+  <data name="Golem Mark II" xml:space="preserve"><value>魔像馬克Ⅱ型</value></data>
+  <data name="Awakened Invasion" xml:space="preserve"><value>覺醒者入侵</value></data>
+  <data name="Defeat Scarlet's minions" xml:space="preserve"><value>擊敗史嘉蕾的爪牙</value></data>
+  <data name="Automated Tournament: Balthazar's Brawl" xml:space="preserve"><value>自動錦標賽：巴薩澤之拳頭</value></data>
+  <data name="Automated Tournament: Grenth's Game" xml:space="preserve"><value>自動錦標賽：古蘭斯的遊戲</value></data>
+  <data name="Automated Tournament: Melandru's Matchup" xml:space="preserve"><value>自動錦標賽：梅蘭朵的比賽</value></data>
+  <data name="Automated Tournament: Lyssa's Legions" xml:space="preserve"><value>自動錦標賽：麗莎軍團</value></data>
+  <data name="Pylons" xml:space="preserve"><value>守望哨站</value></data>
+  <data name="Challenges" xml:space="preserve"><value>挑戰</value></data>
+  <data name="Reset" xml:space="preserve"><value>重置</value></data>
+  <data name="Help the Outposts" xml:space="preserve"><value>前哨事件</value></data>
+  <data name="Prep" xml:space="preserve"><value>準備</value></data>
+  <data name="Start advancing on the Blighting Towers" xml:space="preserve"><value>進攻開始（墨德摩斯）</value></data>
+  <data name="(continued)" xml:space="preserve"><value>進攻持續中</value></data>
+  <data name="Saidra's Haven" xml:space="preserve"><value>塞德拉：阿格莎</value></data>
+  <data name="New Loamhurst" xml:space="preserve"><value>新沃土之森：女王殺手</value></data>
+  <data name="Noran's Homestead" xml:space="preserve"><value>諾蘭：伊梅爾霍夫</value></data>
+  <data name="Rounds 1 to 3" xml:space="preserve"><value>俱樂部閃電戰（第 1–3 回合）</value></data>
+  <data name="Pinata/Reset" xml:space="preserve"><value>彩罐丘牙獸／重置</value></data>
+  <data name="Buried Treasure" xml:space="preserve"><value>尋找埋藏的寶藏</value></data>
+  <data name="The Path to Ascension: Augury Rock" xml:space="preserve"><value>晉升之路</value></data>
+  <data name="Palawadan" xml:space="preserve"><value>帕拉瓦</value></data>
+  <data name="Escorts" xml:space="preserve"><value>護送</value></data>
+  <data name="Ooze Pits" xml:space="preserve"><value>軟泥坑</value></data>
+  <data name="Metal Concert" xml:space="preserve"><value>金屬音樂會</value></data>
+  <data name="Drakkar and Spirits of the Wild" xml:space="preserve"><value>德拉克與野性眾靈</value></data>
+  <data name="Defend Jora's Keep" xml:space="preserve"><value>冬季風暴</value></data>
+  <data name="Shards and Construct" xml:space="preserve"><value>冰巢構造體</value></data>
+  <data name="Icebrood Champions" xml:space="preserve"><value>冰巢勇士</value></data>
+  <data name="Target Practice &amp; Fly by Night" xml:space="preserve"><value>射擊訓練與夜間飛行</value></data>
+  <data name="Hammerhart Rumble!" xml:space="preserve"><value>巨錘猛漢之錘</value></data>
+  <data name="Shackles of the Ancients" xml:space="preserve"><value>遠古枷鎖</value></data>
+  <data name="Twisted Marionette" xml:space="preserve"><value>提線木偶（公共）</value></data>
+  <data name="Battle For Lion's Arch" xml:space="preserve"><value>決戰獅城（公共）</value></data>
+  <data name="Dragonstorm" xml:space="preserve"><value>巨龍風暴（公共）</value></data>
+  <data name="Tower of Nightmares" xml:space="preserve"><value>夢魘之塔（公共）</value></data>
 </root>

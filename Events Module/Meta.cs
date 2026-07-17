@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Flurl;
-using Flurl.Http;
 using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Modules.Managers;
@@ -29,7 +25,7 @@ namespace Events_Module {
 
         public event EventHandler<EventArgs> OnNextRunTimeChanged;
 
-        public static List<Meta> Events;
+        public static List<Meta> Events = new List<Meta>();
 
         public string   Name       { get; set; }
         public string   Colloquial { get; set; }
@@ -39,13 +35,12 @@ namespace Events_Module {
         public string   Location   { get; set; }
         public string   Waypoint   { get; set; }
 
+        [JsonIgnore]
+        public string StableId { get; internal set; }
+
         public string Wiki
         {
-            get
-            {
-                var lang = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
-                return _wikiLinks?.ContainsKey(lang) == true ? _wikiLinks[lang] : _wikiEn;
-            }
+            get => _wikiEn;
             set => _wikiEn = value;
         }
 
@@ -82,7 +77,6 @@ namespace Events_Module {
 
         private string _icon;
         private string _wikiEn;
-        private Dictionary<string, string> _wikiLinks;
 
         public string Icon {
             get => _icon;
@@ -106,6 +100,8 @@ namespace Events_Module {
             var tsNow = DateTime.Now.ToLocalTime().TimeOfDay;
 
             foreach (var e in Events) {
+                if (e.Times.Count == 0) continue;
+
                 TimeSpan[] justTimes = e.Times.Select(time => time.ToLocalTime().TimeOfDay).OrderBy(time => time.TotalSeconds).ToArray();
                 var nextTime = justTimes.FirstOrDefault(ts => ts.TotalSeconds >= tsNow.TotalSeconds);
 
@@ -134,6 +130,10 @@ namespace Events_Module {
         }
 
         public static async Task Load(ContentsManager cm) {
+            SetEvents(await LoadBundled(cm));
+        }
+
+        public static async Task<List<Meta>> LoadBundled(ContentsManager cm) {
             List<Meta> metas = null;
 
             try {
@@ -145,14 +145,13 @@ namespace Events_Module {
             }
 
             if (metas == null) {
-                return;
+                return new List<Meta>();
             }
 
             var uniqueEvents = new List<Meta>();
 
-            var wikiTasks = new List<Task>();
-
             foreach (var meta in metas) {
+                meta.StableId = "local:" + meta.Category + ":" + meta.Name;
                 meta._times.Add(meta.Offset);
 
                 if (meta.RepeatInterval != null && meta.RepeatInterval.Value.TotalSeconds > 0) {
@@ -178,49 +177,82 @@ namespace Events_Module {
                 } else {
                     uniqueEvents.Add(meta);
                 }
-
-                // TODO: Disabled - blocked by wiki and we should likely prequery this info and host it statically somewhere.
-                //if (!string.IsNullOrEmpty(meta._wikiEn)) {
-                //    var pageEn = new Uri(meta._wikiEn).Segments.Last();
-                //    var task = GetInterwikiLinks(pageEn).ContinueWith(async v => meta._wikiLinks = await v);
-                //    wikiTasks.Add(task);
-                //}
             }
 
-            await Task.WhenAll(wikiTasks.ToArray());
+            foreach (var meta in uniqueEvents) {
+                meta._times = meta._times.Distinct().OrderBy(time => time.TimeOfDay).ToList();
+            }
 
-            Events = uniqueEvents;
+            Logger.Info(@"Loaded {eventCount} bundled events.", uniqueEvents.Count);
+            return uniqueEvents;
+        }
 
+        public static void SetEvents(IEnumerable<Meta> events) {
+            Events = events?.Where(meta => meta != null && meta.Times.Count > 0).ToList() ?? new List<Meta>();
             Logger.Info(@"Loaded {eventCount} events.", Events.Count);
-
             UpdateEventSchedules();
         }
 
-        [Localizable(false)]
-        private static async Task<Dictionary<string, string>> GetInterwikiLinks(string page) {
-            var url = "https://wiki.guildwars2.com"
-                     .AppendPathSegment("api.php")
-                     .SetQueryParams(new {
-                          action = "query",
-                          format = "json",
-                          prop = "langlinks",
-                          titles = page,
-                          redirects = 1,
-                          converttitles = 1,
-                          formatversion = 2,
-                          llprop = "url"
-                      });
-            var json = await url.WithHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.49").GetJsonAsync();
-            var wikiPage = json.query.pages[0];
-            if (((IDictionary<string, object>)wikiPage).ContainsKey("langlinks")) {
-                var links = new Dictionary<string, string>();
-                foreach (var link in wikiPage.langlinks) {
-                    links.Add(link.lang, ((string)link.url).Replace("http://", "https://"));
-                }
-                return links;
+        internal static List<Meta> CreateOfficialEvents(IEnumerable<OfficialEventDefinition> definitions,
+                                                        IReadOnlyList<Meta> bundledEvents) {
+            var bundled = bundledEvents ?? new List<Meta>();
+            var officialEvents = new List<Meta>();
+            DateTime utcDay = DateTime.UtcNow.Date;
+
+            foreach (var definition in definitions ?? Enumerable.Empty<OfficialEventDefinition>()) {
+                if (definition.StartMinutesUtc == null || definition.StartMinutesUtc.Count == 0) continue;
+
+                Meta template = FindBundledTemplate(definition, bundled);
+                var meta = new Meta {
+                    StableId = definition.StableId,
+                    Name = template?.Name ?? definition.Name,
+                    Colloquial = template?.Colloquial,
+                    Category = template?.Category ?? definition.Category,
+                    Difficulty = template?.Difficulty,
+                    Location = template?.Location ?? definition.GroupName,
+                    Waypoint = definition.Waypoint,
+                    Wiki = definition.Wiki,
+                    Duration = definition.Duration > 0 ? (int?)definition.Duration : null,
+                    Reminder = template?.Reminder ?? 5,
+                    Phases = template?.Phases,
+                    Icon = template?.Icon
+                };
+
+                meta._times.AddRange(definition.StartMinutesUtc
+                                               .Where(minute => minute >= 0 && minute < 24 * 60)
+                                               .Distinct()
+                                               .OrderBy(minute => minute)
+                                               .Select(minute => DateTime.SpecifyKind(utcDay.AddMinutes(minute), DateTimeKind.Utc)));
+
+                if (meta._times.Count > 0) officialEvents.Add(meta);
             }
-            
-            return null;
+
+            return officialEvents;
+        }
+
+        private static Meta FindBundledTemplate(OfficialEventDefinition definition, IReadOnlyList<Meta> bundled) {
+            Meta bestMatch = null;
+            int bestScore = 0;
+
+            foreach (Meta candidate in bundled) {
+                int score = 0;
+
+                if (string.Equals(candidate.Name, definition.Name, StringComparison.OrdinalIgnoreCase)) score += 100;
+                if (string.Equals(candidate.Colloquial, definition.Name, StringComparison.OrdinalIgnoreCase)) score += 90;
+                if (string.Equals(candidate.Location, definition.Name, StringComparison.OrdinalIgnoreCase)) score += 70;
+                if (string.Equals(candidate.Location, definition.GroupName, StringComparison.OrdinalIgnoreCase)) score += 50;
+                if (!string.IsNullOrWhiteSpace(definition.GroupName) &&
+                    candidate.Name?.IndexOf(definition.GroupName, StringComparison.OrdinalIgnoreCase) >= 0) score += 40;
+                if (!string.IsNullOrWhiteSpace(candidate.Wiki) &&
+                    string.Equals(candidate.Wiki, definition.Wiki, StringComparison.OrdinalIgnoreCase)) score += 20;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = candidate;
+                }
+            }
+
+            return bestScore >= 70 ? bestMatch : null;
         }
     }
 

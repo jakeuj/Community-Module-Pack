@@ -137,6 +137,21 @@ jobs:
 
           Write-Host "Validated $($events.Count) event records and $($eventStrings.Count) unique event strings."
 
+      - name: Test official event timer parser
+        shell: pwsh
+        run: |
+          $frameworkRoot = "$env:GITHUB_WORKSPACE\packages\Microsoft.NETFramework.ReferenceAssemblies.net472.1.0.3\build\"
+          msbuild "Events Module\Tests\OfficialEventTimerParser.Tests.csproj" `
+            /t:Rebuild `
+            /p:Configuration=Release `
+            /p:Platform=AnyCPU `
+            "/p:TargetFrameworkRootPath=$frameworkRoot" `
+            /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          & "Events Module\Tests\bin\Release\OfficialEventTimerParser.Tests.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Build Traditional Chinese BHM
         shell: pwsh
         run: |
