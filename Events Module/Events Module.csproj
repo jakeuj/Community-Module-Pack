@@ -55,6 +55,8 @@
   <ItemGroup>
     <Compile Include="BasicSettingsView.cs" />
     <Compile Include="EventNotification.cs" />
+    <Compile Include="EventRewardData.cs" />
+    <Compile Include="EventRewardSummaryControl.cs" />
     <Compile Include="EventsModule.cs" />
     <Compile Include="Meta.cs" />
     <Compile Include="NotificationMover.cs" />

@@ -473,4 +473,34 @@ Right click to dismiss.</value>
   <data name="Battle For Lion's Arch" xml:space="preserve"><value>Battle For Lion's Arch</value></data>
   <data name="Dragonstorm" xml:space="preserve"><value>Dragonstorm</value></data>
   <data name="Tower of Nightmares" xml:space="preserve"><value>Tower of Nightmares</value></data>
+  <data name="Reward_information" xml:space="preserve">
+    <value>World boss rewards</value>
+  </data>
+  <data name="Reward_guaranteed_rare_or_exotic_items" xml:space="preserve">
+    <value>Guaranteed rare or exotic items: at least {0}</value>
+  </data>
+  <data name="Reward_guaranteed_ground_chest_dragonite" xml:space="preserve">
+    <value>Guaranteed Dragonite Ore in the ground chest: {0}</value>
+  </data>
+  <data name="Reward_ground_chest_daily_limit" xml:space="preserve">
+    <value>Ground chest: once per character per day.</value>
+  </data>
+  <data name="Reward_bonus_chest_daily_limit" xml:space="preserve">
+    <value>Bonus chest: once per account per day.</value>
+  </data>
+  <data name="Reward_source" xml:space="preserve">
+    <value>Source: Guild Wars 2 Wiki — {0}</value>
+  </data>
+  <data name="Reward_verified_on" xml:space="preserve">
+    <value>Verified: {0:yyyy-MM-dd}</value>
+  </data>
+  <data name="Reward_note_claw_of_jormag" xml:space="preserve">
+    <value>The observed quantities are 15–17, 19–21, or 23–24; the compact value is abbreviated.</value>
+  </data>
+  <data name="Reward_note_evolved_jungle_wurm" xml:space="preserve">
+    <value>If no ascended armor chest drops, a second chest may award another 70 or 100 Dragonite Ore.</value>
+  </data>
+  <data name="Reward_note_tequatl" xml:space="preserve">
+    <value>This amount covers the ground Dragon Chest only; the Hero's Chest is not counted.</value>
+  </data>
 </root>

@@ -431,4 +431,34 @@
   <data name="Battle For Lion's Arch" xml:space="preserve"><value>決戰獅城（公共）</value></data>
   <data name="Dragonstorm" xml:space="preserve"><value>巨龍風暴（公共）</value></data>
   <data name="Tower of Nightmares" xml:space="preserve"><value>夢魘之塔（公共）</value></data>
+  <data name="Reward_information" xml:space="preserve">
+    <value>世界王獎勵資訊</value>
+  </data>
+  <data name="Reward_guaranteed_rare_or_exotic_items" xml:space="preserve">
+    <value>保底稀有或特異裝備：至少 {0} 件</value>
+  </data>
+  <data name="Reward_guaranteed_ground_chest_dragonite" xml:space="preserve">
+    <value>地面寶箱保底龍晶礦：{0}</value>
+  </data>
+  <data name="Reward_ground_chest_daily_limit" xml:space="preserve">
+    <value>地面寶箱：每角色每日一次。</value>
+  </data>
+  <data name="Reward_bonus_chest_daily_limit" xml:space="preserve">
+    <value>額外獎勵寶箱：每帳號每日一次。</value>
+  </data>
+  <data name="Reward_source" xml:space="preserve">
+    <value>資料來源：Guild Wars 2 Wiki — {0}</value>
+  </data>
+  <data name="Reward_verified_on" xml:space="preserve">
+    <value>查核日期：{0:yyyy-MM-dd}</value>
+  </data>
+  <data name="Reward_note_claw_of_jormag" xml:space="preserve">
+    <value>實際觀測數量為 15–17、19–21 或 23–24；卡片上的數值為簡寫。</value>
+  </data>
+  <data name="Reward_note_evolved_jungle_wurm" xml:space="preserve">
+    <value>若未掉落昇華護甲寶箱，第二個寶箱可能再給 70 或 100 個龍晶礦。</value>
+  </data>
+  <data name="Reward_note_tequatl" xml:space="preserve">
+    <value>此數量只計算地面的巨龍寶箱，不包含英雄寶箱。</value>
+  </data>
 </root>

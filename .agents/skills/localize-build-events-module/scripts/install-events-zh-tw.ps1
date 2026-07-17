@@ -53,7 +53,7 @@ function Get-BhmInspection {
             [void]$entrySet.Add($entryName)
         }
 
-        $requiredEntries = @("manifest.json", "Events Module.dll", "ref/events.json")
+        $requiredEntries = @("manifest.json", "Events Module.dll", "ref/events.json", "ref/event-rewards.json")
         $missingEntries = @($requiredEntries | Where-Object { -not $entrySet.Contains($_) })
         if ($missingEntries.Count -gt 0) {
             throw "BHM is missing required entries: $($missingEntries -join ', ')"

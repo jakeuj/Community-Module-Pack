@@ -152,7 +152,7 @@ if ($resourceCount -lt $validation.RequiredKeyCount) {
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
 try {
-    $requiredEntries = @('Events Module.dll', 'manifest.json', 'ref/events.json') + @(
+    $requiredEntries = @('Events Module.dll', 'manifest.json', 'ref/events.json', 'ref/event-rewards.json') + @(
         $iconFiles | ForEach-Object { "ref/textures/events/$($_.Name)" }
     )
     foreach ($entryName in $requiredEntries) {

@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Blish_HUD;
+using Blish_HUD.Content;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Modules;
@@ -41,9 +43,12 @@ namespace Events_Module {
 
         private const int TIMER_RECALC_RATE = 5;
         private static readonly TimeSpan OfficialRefreshInterval = TimeSpan.FromHours(6);
+        private const string RareRewardIcon = "EF63A10BD2317CECCEA63A3B7E6555550B414C4E/1766399";
+        private const string DragoniteRewardIcon = "D53E69EFB3AFF4C85CC370AA32F1A6A61C03CCE8/631482";
 
         private List<DetailsButton> _displayedEvents;
         private readonly Dictionary<Meta, EventHandler<EventArgs>> _scheduleHandlers = new Dictionary<Meta, EventHandler<EventArgs>>();
+        private readonly Dictionary<DetailsButton, Meta> _eventMetaByButton = new Dictionary<DetailsButton, Meta>();
 
         private WindowTab _eventsTab;
 
@@ -57,8 +62,11 @@ namespace Events_Module {
 
         private Texture2D _textureWatch;
         private Texture2D _textureWatchActive;
+        private AsyncTexture2D _textureRareReward;
+        private AsyncTexture2D _textureDragoniteReward;
 
         private IReadOnlyList<Meta> _bundledEvents = new List<Meta>();
+        private EventRewardCatalog _rewardCatalog = EventRewardCatalog.Empty;
         private OfficialEventTimerService _officialEventTimerService;
         private CancellationTokenSource _officialRefreshCancellation;
         private Task<OfficialEventTimerSourceResult> _officialRefreshTask;
@@ -110,13 +118,16 @@ namespace Events_Module {
         private void LoadTextures() {
             _textureWatch       = ContentsManager.GetTexture(@"textures\605021.png");
             _textureWatchActive = ContentsManager.GetTexture(@"textures\605019.png");
+            _textureRareReward = GameService.Content.GetRenderServiceTexture(RareRewardIcon);
+            _textureDragoniteReward = GameService.Content.GetRenderServiceTexture(DragoniteRewardIcon);
             Meta.ConfigureIconTextures(ContentsManager, ContentsManager.GetTexture(@"textures\1466345.png"));
         }
 
         protected override async Task LoadAsync() {
             LoadTextures();
 
-            _bundledEvents = await Meta.LoadBundled(this.ContentsManager);
+            _rewardCatalog = await LoadRewardCatalogAsync();
+            _bundledEvents = await Meta.LoadBundled(this.ContentsManager, _rewardCatalog);
             Meta.SetEvents(_bundledEvents);
 
             _officialRefreshCancellation = new CancellationTokenSource();
@@ -168,6 +179,8 @@ namespace Events_Module {
         }
 
         private Panel BuildSettingPanel(Rectangle panelBounds) {
+            _eventMetaByButton.Clear();
+
             var etPanel = new Panel() {
                 CanScroll = false,
                 Size = panelBounds.Size
@@ -225,12 +238,12 @@ namespace Events_Module {
             };
 
             searchBox.TextChanged += delegate (object sender, EventArgs args) {
-                eventPanel.FilterChildren<DetailsButton>(db => db.Text.ToLower().Contains(searchBox.Text.ToLower()));
+                string query = searchBox.Text;
+                eventPanel.FilterChildren<DetailsButton>(db =>
+                    _eventMetaByButton.TryGetValue(db, out Meta eventMeta) && EventMatchesSearch(eventMeta, query));
             };
 
             //eventPanel.SuspendLayout();
-
-            var metaByButton = new Dictionary<DetailsButton, Meta>();
 
             foreach (var meta in Meta.Events) {
                 var legacySetting = _watchCollection.DefineSetting(@"watchEvent:" + meta.Name, true);
@@ -244,14 +257,14 @@ namespace Events_Module {
                 var es2 = new DetailsButton {
                     Parent           = eventPanel,
                     BasicTooltipText = Resources.ResourceManager.GetString(meta.Category) ?? meta.Category,
-                    Text             = Resources.ResourceManager.GetString(meta.Name) ?? meta.Name,
+                    Text             = GetEventDisplayText(meta),
                     IconSize         = DetailsIconSize.Small,
                     ShowVignette     = false,
                     HighlightType    = DetailsHighlightType.LightHighlight,
                     ShowToggleButton = true
                 };
 
-                metaByButton.Add(es2, meta);
+                _eventMetaByButton.Add(es2, meta);
 
                 if (meta.Texture != null && meta.Texture.HasTexture) {
                     es2.Icon = meta.Texture;
@@ -265,6 +278,13 @@ namespace Events_Module {
                     VerticalAlignment   = VerticalAlignment.Middle,
                     Parent              = es2,
                 };
+
+                if (meta.Reward != null) {
+                    new EventRewardSummaryControl(meta.Reward, _textureRareReward, _textureDragoniteReward) {
+                        BasicTooltipText = GetRewardDetails(meta.Reward),
+                        Parent = es2
+                    };
+                }
 
                 if (!string.IsNullOrEmpty(meta.Wiki)) {
                     var glowWikiBttn = new GlowButton {
@@ -352,7 +372,7 @@ namespace Events_Module {
             evWatched.Click += delegate {
                 eventPanel.FilterChildren<DetailsButton>(db => {
                     Meta watchedMeta;
-                    return metaByButton.TryGetValue(db, out watchedMeta) && watchedMeta.IsWatched;
+                    return _eventMetaByButton.TryGetValue(db, out watchedMeta) && watchedMeta.IsWatched;
                 });
             };
 
@@ -422,15 +442,74 @@ namespace Events_Module {
             return msg.ToString();
         }
 
+        private static string GetLocalizedEventName(Meta meta) {
+            return Resources.ResourceManager.GetString(meta.Name) ?? meta.Name;
+        }
+
+        private static string GetEventDisplayText(Meta meta) {
+            string localizedName = GetLocalizedEventName(meta);
+            string englishName = string.IsNullOrWhiteSpace(meta.EnglishName) ? meta.Name : meta.EnglishName;
+
+            if (string.IsNullOrWhiteSpace(englishName) ||
+                string.Equals(localizedName, englishName, StringComparison.CurrentCultureIgnoreCase)) {
+                return localizedName;
+            }
+
+            return localizedName + Environment.NewLine + englishName;
+        }
+
+        private static bool EventMatchesSearch(Meta meta, string query) {
+            if (string.IsNullOrWhiteSpace(query)) return true;
+
+            string[] candidates = {
+                GetLocalizedEventName(meta),
+                meta.EnglishName,
+                meta.Name,
+                meta.Colloquial
+            };
+
+            return candidates.Any(candidate =>
+                !string.IsNullOrWhiteSpace(candidate) &&
+                candidate.IndexOf(query.Trim(), StringComparison.CurrentCultureIgnoreCase) >= 0);
+        }
+
+        private static string GetRewardDetails(EventRewardSummary reward) {
+            var message = new StringBuilder();
+            message.AppendLine(Localize("Reward_information", "World boss rewards"));
+            message.AppendLine(string.Format(
+                Localize("Reward_guaranteed_rare_or_exotic_items", "Guaranteed rare or exotic items: at least {0}"),
+                reward.MinimumRareOrExoticItems
+            ));
+            message.AppendLine(Localize("Reward_bonus_chest_daily_limit", "Bonus chest: once per account per day."));
+            message.AppendLine();
+            message.AppendLine(string.Format(
+                Localize("Reward_guaranteed_ground_chest_dragonite", "Guaranteed Dragonite Ore in the ground chest: {0}"),
+                reward.DragoniteAmount
+            ));
+            message.AppendLine(Localize("Reward_ground_chest_daily_limit", "Ground chest: once per character per day."));
+
+            if (!string.IsNullOrWhiteSpace(reward.NoteKey)) {
+                message.AppendLine(Localize(reward.NoteKey, reward.NoteKey));
+            }
+
+            message.AppendLine();
+            message.AppendLine(string.Format(
+                Localize("Reward_source", "Source: Guild Wars 2 Wiki — {0}"),
+                reward.SourceName
+            ));
+            message.Append(string.Format(
+                Localize("Reward_verified_on", "Verified: {0:yyyy-MM-dd}"),
+                reward.VerifiedOn
+            ));
+            return message.ToString();
+        }
+
         private void UpdateSort(object sender, EventArgs e) {
             var item = ((Dropdown)sender).SelectedItem;
             if (item == _ddAlphabetical) {
-                _displayedEvents.Sort((e1, e2) => string.Compare(e1.Text, e2.Text, StringComparison.CurrentCultureIgnoreCase));
+                _displayedEvents.Sort(CompareEventButtonsAlphabetically);
             } else if (item == _ddNextup) {
-                var orderedEvents = GetOrderedNextUpEventNames();
-                _displayedEvents.Sort((db1, db2) => {
-                    return orderedEvents.IndexOf(db1.Text) - orderedEvents.IndexOf(db2.Text);
-                });
+                _displayedEvents.Sort(CompareEventButtonsByNextTime);
             }
 
             RepositionES();
@@ -438,13 +517,39 @@ namespace Events_Module {
 
         private void SortEventPanel(string ddSortMethodValue, ref FlowPanel eventPanel) {
             if (ddSortMethodValue == _ddAlphabetical) {
-                eventPanel.SortChildren<DetailsButton>((db1, db2) => string.Compare(db1.Text, db2.Text, StringComparison.CurrentCultureIgnoreCase));
+                eventPanel.SortChildren<DetailsButton>(CompareEventButtonsAlphabetically);
             } else if (ddSortMethodValue == _ddNextup) {
-                var orderedEvents = GetOrderedNextUpEventNames();
-                eventPanel.SortChildren<DetailsButton>((db1, db2) => {
-                    return orderedEvents.IndexOf(db1.Text) - orderedEvents.IndexOf(db2.Text);
-                });
+                eventPanel.SortChildren<DetailsButton>(CompareEventButtonsByNextTime);
             }
+        }
+
+        private int CompareEventButtonsAlphabetically(DetailsButton left, DetailsButton right) {
+            if (!_eventMetaByButton.TryGetValue(left, out Meta leftMeta)) return 1;
+            if (!_eventMetaByButton.TryGetValue(right, out Meta rightMeta)) return -1;
+
+            int localizedComparison = string.Compare(
+                GetLocalizedEventName(leftMeta),
+                GetLocalizedEventName(rightMeta),
+                StringComparison.CurrentCultureIgnoreCase
+            );
+            if (localizedComparison != 0) return localizedComparison;
+
+            int englishComparison = string.Compare(
+                leftMeta.EnglishName ?? leftMeta.Name,
+                rightMeta.EnglishName ?? rightMeta.Name,
+                StringComparison.CurrentCultureIgnoreCase
+            );
+            return englishComparison != 0
+                ? englishComparison
+                : string.Compare(leftMeta.StableId, rightMeta.StableId, StringComparison.Ordinal);
+        }
+
+        private int CompareEventButtonsByNextTime(DetailsButton left, DetailsButton right) {
+            if (!_eventMetaByButton.TryGetValue(left, out Meta leftMeta)) return 1;
+            if (!_eventMetaByButton.TryGetValue(right, out Meta rightMeta)) return -1;
+
+            int timeComparison = leftMeta.NextTime.CompareTo(rightMeta.NextTime);
+            return timeComparison != 0 ? timeComparison : CompareEventButtonsAlphabetically(left, right);
         }
 
         // Utility
@@ -493,18 +598,15 @@ namespace Events_Module {
             _officialRefreshTask = null;
             _officialEventTimerService = null;
             _officialRefreshCancellation = null;
+            _textureRareReward = null;
+            _textureDragoniteReward = null;
 
             GameService.Overlay.UserLocaleChanged -= ChangeLocalization;
             UnsubscribeScheduleHandlers();
+            _eventMetaByButton.Clear();
             if (_eventsTab != null) GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
 
             ModuleInstance = null;
-        }
-
-        private IList<string> GetOrderedNextUpEventNames() {
-            return Meta.Events.OrderBy(el => el.NextTime)
-                       .Select(el => Resources.ResourceManager.GetString(el.Name) ?? el.Name)
-                       .ToList();
         }
 
         private void ChangeLocalization(object sender, EventArgs e) {
@@ -563,7 +665,7 @@ namespace Events_Module {
                                !string.Equals(result.Sha1, _officialSha1, StringComparison.OrdinalIgnoreCase);
 
             if (dataChanged) {
-                Meta.SetEvents(Meta.CreateOfficialEvents(result.Events, _bundledEvents));
+                Meta.SetEvents(Meta.CreateOfficialEvents(result.Events, _bundledEvents, _rewardCatalog));
                 _officialRevisionId = result.RevisionId;
                 _officialSha1 = result.Sha1;
                 _usingBundledEvents = false;
@@ -615,6 +717,7 @@ namespace Events_Module {
             UnsubscribeScheduleHandlers();
             _tabPanel.Dispose();
             _displayedEvents.Clear();
+            _eventMetaByButton.Clear();
             _tabPanel = BuildSettingPanel(GameService.Overlay.BlishHudWindow.ContentRegion);
 
             if (_eventsTab != null) {
@@ -632,6 +735,19 @@ namespace Events_Module {
                 handler.Key.OnNextRunTimeChanged -= handler.Value;
             }
             _scheduleHandlers.Clear();
+        }
+
+        private async Task<EventRewardCatalog> LoadRewardCatalogAsync() {
+            try {
+                using (var reader = new StreamReader(ContentsManager.GetFileStream(@"event-rewards.json"))) {
+                    EventRewardCatalog catalog = EventRewardCatalog.Parse(await reader.ReadToEndAsync());
+                    Logger.Info("Loaded reward information for {rewardEventCount} events.", catalog.Count);
+                    return catalog;
+                }
+            } catch (Exception exception) {
+                Logger.Warn(exception, "Failed to load event reward information; event schedules will remain available without rewards.");
+                return EventRewardCatalog.Empty;
+            }
         }
 
     }

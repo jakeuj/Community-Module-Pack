@@ -45,6 +45,12 @@ namespace Events_Module {
         [JsonIgnore]
         public string StableId { get; internal set; }
 
+        [JsonIgnore]
+        public string EnglishName { get; internal set; }
+
+        [JsonIgnore]
+        internal EventRewardSummary Reward { get; set; }
+
         public string Wiki
         {
             get => _wikiEn;
@@ -218,10 +224,14 @@ namespace Events_Module {
         }
 
         public static async Task Load(ContentsManager cm) {
-            SetEvents(await LoadBundled(cm));
+            SetEvents(await LoadBundled(cm, EventRewardCatalog.Empty));
         }
 
-        public static async Task<List<Meta>> LoadBundled(ContentsManager cm) {
+        public static Task<List<Meta>> LoadBundled(ContentsManager cm) {
+            return LoadBundled(cm, EventRewardCatalog.Empty);
+        }
+
+        internal static async Task<List<Meta>> LoadBundled(ContentsManager cm, EventRewardCatalog rewardCatalog) {
             List<Meta> metas = null;
 
             try {
@@ -269,6 +279,12 @@ namespace Events_Module {
 
             foreach (var meta in uniqueEvents) {
                 meta._times = meta._times.Distinct().OrderBy(time => time.TimeOfDay).ToList();
+                meta.EnglishName = meta.Name;
+                meta.Reward = (rewardCatalog ?? EventRewardCatalog.Empty).Match(
+                    meta.Waypoint,
+                    meta.Name,
+                    meta.Colloquial
+                );
             }
 
             Logger.Info(@"Loaded {eventCount} bundled events.", uniqueEvents.Count);
@@ -282,7 +298,8 @@ namespace Events_Module {
         }
 
         internal static List<Meta> CreateOfficialEvents(IEnumerable<OfficialEventDefinition> definitions,
-                                                        IReadOnlyList<Meta> bundledEvents) {
+                                                        IReadOnlyList<Meta> bundledEvents,
+                                                        EventRewardCatalog rewardCatalog = null) {
             var bundled = bundledEvents ?? new List<Meta>();
             var officialEvents = new List<Meta>();
             var iconCandidates = bundled.Select(item => new OfficialEventIconCandidate {
@@ -313,6 +330,7 @@ namespace Events_Module {
                 var meta = new Meta {
                     StableId = definition.StableId,
                     Name = template?.Name ?? definition.Name,
+                    EnglishName = definition.Name,
                     Colloquial = template?.Colloquial,
                     Category = template?.Category ?? definition.Category,
                     Difficulty = template?.Difficulty,
@@ -325,6 +343,13 @@ namespace Events_Module {
                     Icon = renderIcon,
                     LocalIconPath = localIconPath
                 };
+
+                meta.Reward = (rewardCatalog ?? EventRewardCatalog.Empty).Match(
+                    definition.Waypoint,
+                    definition.Name,
+                    template?.Name,
+                    template?.Colloquial
+                );
 
                 meta._times.AddRange(definition.StartMinutesUtc
                                                .Where(minute => minute >= 0 && minute < 24 * 60)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -82,6 +83,7 @@ namespace Events_Module {
             AssertThrows(Fixture.Replace("[&BEwCAAA=]", "not-a-chat-link"), "Malformed waypoint chat links must be rejected.");
 
             RunIconMatcherTests();
+            RunRewardCatalogTests();
 
             bool productionGuardRejectedFixture = false;
             try {
@@ -215,6 +217,35 @@ namespace Events_Module {
                    "Missing stable IDs must continue to use the safe fallback icon.");
         }
 
+        private static void RunRewardCatalogTests() {
+            string catalogJson = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "event-rewards.json"));
+            EventRewardCatalog catalog = EventRewardCatalog.Parse(catalogJson);
+
+            Assert(catalog.Count == 13, "The reward catalog should contain the 13 core world bosses.");
+
+            EventRewardSummary golem = catalog.Match("[&BNQCAAA=]", "Renamed Golem");
+            Assert(golem?.Id == "world-boss:golem-mark-ii", "Waypoint matching should identify Golem Mark II.");
+            Assert(golem.DragoniteAmount == "15–25", "Golem Mark II should show its verified Dragonite Ore range.");
+
+            EventRewardSummary megadestroyer = catalog.Match(null, "Megadestroyer");
+            Assert(megadestroyer?.DragoniteAmount == "3–5", "English-name fallback should match Megadestroyer.");
+
+            EventRewardSummary greatWurm = catalog.Match("[&BEEFAAA=]", "Jungle Wurm");
+            EventRewardSummary evolvedWurm = catalog.Match("[&BKoBAAA=]", "Jungle Wurm");
+            Assert(greatWurm?.Id == "world-boss:great-jungle-wurm", "The Great Jungle Wurm waypoint should stay distinct.");
+            Assert(evolvedWurm?.Id == "world-boss:evolved-jungle-wurm", "The Evolved Jungle Wurm waypoint should stay distinct.");
+            Assert(catalog.Match("[&AAAAAAA=]", "Unknown Event") == null, "Unlisted events must not receive reward claims.");
+
+            AssertRewardCatalogThrows(
+                catalogJson.Replace("\"world-boss:taidha-covington\"", "\"world-boss:megadestroyer\""),
+                "Duplicate reward event IDs must be rejected."
+            );
+            AssertRewardCatalogThrows(
+                catalogJson.Replace("2026-07-18", DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd")),
+                "Reward verification dates beyond the worldwide time-zone boundary must be rejected."
+            );
+        }
+
         private static void RunLiveAudit() {
             string endpoint = OfficialEventTimerEndpoint.ApiEndpoint + "?action=query&prop=revisions&titles=Widget%3AEvent_timer%2Fdata.json&rvprop=ids%7Ctimestamp%7Csha1%7Ccontent&rvslots=main&format=json&formatversion=2&maxlag=5";
             string response;
@@ -250,13 +281,35 @@ namespace Events_Module {
                 Assert(definition.Waypoint == expected.Value, $"Unexpected live waypoint for {expected.Key}: {definition.Waypoint}.");
             }
 
-            Console.WriteLine($"Live audit passed: widget {parsed.Version}, {parsed.Events.Count} events.");
+            EventRewardCatalog rewardCatalog = EventRewardCatalog.Parse(
+                File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "event-rewards.json"))
+            );
+            int matchedRewardCount = parsed.Events
+                                           .Select(item => rewardCatalog.Match(item.Waypoint, item.Name))
+                                           .Where(reward => reward != null)
+                                           .Select(reward => reward.Id)
+                                           .Distinct(StringComparer.Ordinal)
+                                           .Count();
+            Assert(matchedRewardCount == 13,
+                   $"Expected all 13 core world boss rewards to match the live Widget; matched {matchedRewardCount}.");
+
+            Console.WriteLine($"Live audit passed: widget {parsed.Version}, {parsed.Events.Count} events, {matchedRewardCount} reward matches.");
         }
 
         private static void AssertThrows(string json, string message) {
             bool threw = false;
             try {
                 OfficialEventTimerParser.Parse(json, requireProductionCounts: false);
+            } catch {
+                threw = true;
+            }
+            Assert(threw, message);
+        }
+
+        private static void AssertRewardCatalogThrows(string json, string message) {
+            bool threw = false;
+            try {
+                EventRewardCatalog.Parse(json);
             } catch {
                 threw = true;
             }

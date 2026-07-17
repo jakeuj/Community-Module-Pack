@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "verifiedOn": "2026-07-18",
+  "minimumRareOrExoticItems": 1,
+  "rulesSource": "https://wiki.guildwars2.com/wiki/World_boss",
+  "events": [
+    {
+      "id": "world-boss:taidha-covington",
+      "names": [ "Admiral Taidha Covington", "Taidha Covington", "Hydra Queen" ],
+      "waypoint": "[&BKgBAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Taidha's Treasures",
+      "source": "https://wiki.guildwars2.com/wiki/Taidha%27s_Treasures"
+    },
+    {
+      "id": "world-boss:svanir-shaman-chief",
+      "names": [ "Svanir Shaman Chief", "Frozen Maw" ],
+      "waypoint": "[&BMIDAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Glorious Chest (The Frozen Maw)",
+      "source": "https://wiki.guildwars2.com/wiki/Glorious_Chest_(The_Frozen_Maw)"
+    },
+    {
+      "id": "world-boss:megadestroyer",
+      "names": [ "Megadestroyer" ],
+      "waypoint": "[&BM0CAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Ancient Treasure",
+      "source": "https://wiki.guildwars2.com/wiki/Ancient_Treasure"
+    },
+    {
+      "id": "world-boss:fire-elemental",
+      "names": [ "Fire Elemental" ],
+      "waypoint": "[&BEcAAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Chest (Thaumanova Reactor Fallout)",
+      "source": "https://wiki.guildwars2.com/wiki/Chest_(Thaumanova_Reactor_Fallout)"
+    },
+    {
+      "id": "world-boss:the-shatterer",
+      "names": [ "The Shatterer", "Shatterer" ],
+      "waypoint": "[&BE4DAAA=]",
+      "dragonite": "15–25",
+      "sourceName": "Dragon Chest (The Shatterer)",
+      "source": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(The_Shatterer)"
+    },
+    {
+      "id": "world-boss:great-jungle-wurm",
+      "names": [ "Great Jungle Wurm", "Jungle Wurm" ],
+      "waypoint": "[&BEEFAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Swamp Chest",
+      "source": "https://wiki.guildwars2.com/wiki/Swamp_Chest"
+    },
+    {
+      "id": "world-boss:modniir-ulgoth",
+      "names": [ "Modniir Ulgoth", "Ulgoth the Modniir" ],
+      "waypoint": "[&BLAAAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Splendid Chest (Ulgoth the Modniir)",
+      "source": "https://wiki.guildwars2.com/wiki/Splendid_Chest_(Ulgoth_the_Modniir)"
+    },
+    {
+      "id": "world-boss:shadow-behemoth",
+      "names": [ "Shadow Behemoth" ],
+      "waypoint": "[&BPcAAAA=]",
+      "dragonite": "3–5",
+      "sourceName": "Demonic Chest",
+      "source": "https://wiki.guildwars2.com/wiki/Demonic_Chest"
+    },
+    {
+      "id": "world-boss:claw-of-jormag",
+      "names": [ "Claw of Jormag" ],
+      "waypoint": "[&BHoCAAA=]",
+      "dragonite": "15–17、19–21、23–24",
+      "compactDragonite": "15–24*",
+      "noteKey": "Reward_note_claw_of_jormag",
+      "sourceName": "Magnificent Chest (Claw of Jormag)",
+      "source": "https://wiki.guildwars2.com/wiki/Magnificent_Chest_(Claw_of_Jormag)"
+    },
+    {
+      "id": "world-boss:golem-mark-ii",
+      "names": [ "Golem Mark II", "Inquest Golem Mark II" ],
+      "waypoint": "[&BNQCAAA=]",
+      "dragonite": "15–25",
+      "sourceName": "Inquest Resources",
+      "source": "https://wiki.guildwars2.com/wiki/Inquest_Resources"
+    },
+    {
+      "id": "world-boss:evolved-jungle-wurm",
+      "names": [ "Evolved Jungle Wurm", "Triple Trouble" ],
+      "waypoint": "[&BKoBAAA=]",
+      "dragonite": "1–15",
+      "compactDragonite": "1–15+",
+      "noteKey": "Reward_note_evolved_jungle_wurm",
+      "sourceName": "Great Jungle Wurm Chest",
+      "source": "https://wiki.guildwars2.com/wiki/Great_Jungle_Wurm_Chest"
+    },
+    {
+      "id": "world-boss:karka-queen",
+      "names": [ "Karka Queen" ],
+      "waypoint": "[&BNUGAAA=]",
+      "dragonite": "30",
+      "sourceName": "Chest (Karka Queen)",
+      "source": "https://wiki.guildwars2.com/wiki/Chest_(Karka_Queen)"
+    },
+    {
+      "id": "world-boss:tequatl-the-sunless",
+      "names": [ "Tequatl the Sunless", "Tequatl" ],
+      "waypoint": "[&BNABAAA=]",
+      "dragonite": "15–25",
+      "noteKey": "Reward_note_tequatl",
+      "sourceName": "Dragon Chest (Tequatl the Sunless)",
+      "source": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(Tequatl_the_Sunless)"
+    }
+  ]
+}

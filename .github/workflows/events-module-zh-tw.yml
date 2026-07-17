@@ -193,7 +193,7 @@ jobs:
           $enumerator = $reader.GetEnumerator()
           while ($enumerator.MoveNext()) { $resourceCount++ }
           $reader.Close()
-          if ($resourceCount -lt 172) { throw "Expected at least 172 embedded resources, found $resourceCount." }
+          if ($resourceCount -lt 182) { throw "Expected at least 182 embedded resources, found $resourceCount." }
 
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
@@ -216,6 +216,9 @@ jobs:
             }
             if ($null -eq $archive.GetEntry("ref/events.json")) {
               throw "BHM does not contain ref/events.json."
+            }
+            if ($null -eq $archive.GetEntry("ref/event-rewards.json")) {
+              throw "BHM does not contain ref/event-rewards.json."
             }
             foreach ($icon in $eventIcons) {
               if ($null -eq $archive.GetEntry("ref/textures/events/$icon")) {
