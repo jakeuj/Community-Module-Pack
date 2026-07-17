@@ -13,11 +13,14 @@ using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
+using Blish_HUD.Modules.Pkgs;
 using Blish_HUD.Settings;
 using Events_Module.Properties;
 using Humanizer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Events_Module {
 
@@ -43,6 +46,8 @@ namespace Events_Module {
 
         private const int TIMER_RECALC_RATE = 5;
         private static readonly TimeSpan OfficialRefreshInterval = TimeSpan.FromHours(6);
+        private const string ModuleNamespace = "bh.general.events";
+        private const string ProjectUrl = "https://github.com/jakeuj/Community-Module-Pack";
         private const string RareRewardIcon = "EF63A10BD2317CECCEA63A3B7E6555550B414C4E/1766399";
         private const string DragoniteRewardIcon = "D53E69EFB3AFF4C85CC370AA32F1A6A61C03CCE8/631482";
 
@@ -57,6 +62,7 @@ namespace Events_Module {
         private SettingCollection  _watchCollection;
         private SettingEntry<bool> _settingNotificationsEnabled;
         private SettingEntry<bool> _settingChimeEnabled;
+        private SettingEntry<bool> _settingAutoUpdate;
 
         private SettingEntry<Point> _settingNotificationsPosition;
 
@@ -75,9 +81,34 @@ namespace Events_Module {
         private string _officialSha1;
         private bool _usingBundledEvents = true;
 
+        private ModuleUpdateService _moduleUpdateService;
+        private CancellationTokenSource _moduleUpdateCancellation;
+        private Task<ModuleUpdateCheckResult> _moduleUpdateCheckTask;
+        private Task _moduleUpdateInstallTask;
+        private ModuleManager _currentModuleManager;
+        private ModuleUpdateRelease _availableModuleUpdate;
+        private bool _moduleUpdateInstalling;
+        private bool _autoInstallAfterCheck;
+        private bool _moduleUpdateInstallationSupported;
+        private string _moduleUpdateInstallationUnavailableReason = string.Empty;
+        private string _moduleUpdateCurrentVersion = string.Empty;
+        private string _moduleUpdateLatestVersion = string.Empty;
+
         public event EventHandler SourceStatusChanged;
+        public event EventHandler ModuleUpdateStatusChanged;
 
         public string SourceStatus { get; private set; } = string.Empty;
+        public string ModuleUpdateStatus { get; private set; } = string.Empty;
+        public string ModuleUpdateCurrentVersion => _moduleUpdateCurrentVersion;
+        public string ModuleUpdateLatestVersion => _moduleUpdateLatestVersion;
+        public bool CanCheckForModuleUpdate => ModuleBuildInfo.SelfUpdateEnabled &&
+                                               _moduleUpdateService != null &&
+                                               _moduleUpdateCheckTask == null &&
+                                               !_moduleUpdateInstalling;
+        public bool CanInstallModuleUpdate => _availableModuleUpdate != null &&
+                                              _moduleUpdateInstallationSupported &&
+                                              _moduleUpdateCheckTask == null &&
+                                              !_moduleUpdateInstalling;
 
         public bool NotificationsEnabled {
             get => _settingNotificationsEnabled.Value;
@@ -87,6 +118,15 @@ namespace Events_Module {
         public bool ChimeEnabled {
             get => _settingChimeEnabled.Value;
             set => _settingChimeEnabled.Value = value;
+        }
+
+        public bool AutoUpdateEnabled {
+            get => _settingAutoUpdate?.Value ?? true;
+            set {
+                if (_settingAutoUpdate == null || _settingAutoUpdate.Value == value) return;
+                _settingAutoUpdate.Value = value;
+                ModuleUpdateStatusChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public Point NotificationPosition {
@@ -104,6 +144,7 @@ namespace Events_Module {
 
             _settingNotificationsEnabled = selfManagedSettings.DefineSetting(@"notificationsEnabled", true);
             _settingChimeEnabled         = selfManagedSettings.DefineSetting(@"chimeEnabled",         true);
+            _settingAutoUpdate           = selfManagedSettings.DefineSetting(@"autoUpdate",           true);
 
             _settingNotificationsPosition = selfManagedSettings.DefineSetting("notificationPosition", new Point(180, 60));
 
@@ -125,6 +166,7 @@ namespace Events_Module {
 
         protected override async Task LoadAsync() {
             LoadTextures();
+            InitializeModuleUpdater();
 
             _rewardCatalog = await LoadRewardCatalogAsync();
             _bundledEvents = await Meta.LoadBundled(this.ContentsManager, _rewardCatalog);
@@ -172,6 +214,14 @@ namespace Events_Module {
 
         internal void RequestOfficialRefresh() {
             StartOfficialRefresh(force: true);
+        }
+
+        internal void RequestModuleUpdateCheck() {
+            StartModuleUpdateCheck(autoInstall: false);
+        }
+
+        internal void RequestModuleUpdateInstall() {
+            BeginModuleUpdateInstall();
         }
 
         internal static string Localize(string key, string fallback) {
@@ -559,6 +609,7 @@ namespace Events_Module {
 
         protected override void Update(GameTime gameTime) {
             CompleteOfficialRefreshIfReady();
+            CompleteModuleUpdateCheckIfReady();
 
             _elapsedSeconds += gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -574,6 +625,8 @@ namespace Events_Module {
         }
 
         protected override void Unload() {
+            DisposeModuleUpdater();
+
             CancellationTokenSource cancellation = _officialRefreshCancellation;
             OfficialEventTimerService service = _officialEventTimerService;
             Task<OfficialEventTimerSourceResult> refreshTask = _officialRefreshTask;
@@ -607,6 +660,308 @@ namespace Events_Module {
             if (_eventsTab != null) GameService.Overlay.BlishHudWindow.RemoveTab(_eventsTab);
 
             ModuleInstance = null;
+        }
+
+        private void InitializeModuleUpdater() {
+            _currentModuleManager = GameService.Module.Modules.FirstOrDefault(module => ReferenceEquals(module.ModuleInstance, this));
+            _moduleUpdateCurrentVersion = _currentModuleManager?.Manifest?.Version?.ToString() ?? string.Empty;
+
+            if (!ModuleBuildInfo.SelfUpdateEnabled) {
+                SetModuleUpdateStatus(Localize(
+                    "Module_update_development_build",
+                    "Automatic updates are disabled in development builds."
+                ));
+                return;
+            }
+
+            _moduleUpdateInstallationSupported = TryGetModuleUpdateSupport(
+                _currentModuleManager,
+                out _moduleUpdateInstallationUnavailableReason
+            );
+            _moduleUpdateCancellation = new CancellationTokenSource();
+            _moduleUpdateService = new ModuleUpdateService();
+            StartModuleUpdateCheck(autoInstall: true);
+        }
+
+        private void StartModuleUpdateCheck(bool autoInstall) {
+            if (!CanCheckForModuleUpdate || _moduleUpdateCancellation == null) return;
+
+            _availableModuleUpdate = null;
+            _moduleUpdateLatestVersion = string.Empty;
+            _autoInstallAfterCheck = autoInstall && AutoUpdateEnabled;
+            SetModuleUpdateStatus(Localize("Module_update_checking", "Checking GitHub for module updates..."));
+            _moduleUpdateCheckTask = _moduleUpdateService.CheckAsync(
+                _moduleUpdateCurrentVersion,
+                _moduleUpdateCancellation.Token
+            );
+            ModuleUpdateStatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void CompleteModuleUpdateCheckIfReady() {
+            if (_moduleUpdateCheckTask == null || !_moduleUpdateCheckTask.IsCompleted) return;
+
+            Task<ModuleUpdateCheckResult> completedTask = _moduleUpdateCheckTask;
+            _moduleUpdateCheckTask = null;
+
+            try {
+                if (completedTask.IsCanceled) return;
+
+                ModuleUpdateCheckResult result = completedTask.GetAwaiter().GetResult();
+                if (result.Failure != ModuleUpdateFailure.None) {
+                    SetModuleUpdateStatus(GetModuleUpdateFailureStatus(result.Failure));
+                    return;
+                }
+
+                _moduleUpdateLatestVersion = result.Release.Version.ToString();
+                if (!result.UpdateAvailable) {
+                    SetModuleUpdateStatus(string.Format(
+                        Localize("Module_update_up_to_date", "Current version {0} is up to date."),
+                        _moduleUpdateCurrentVersion
+                    ));
+                    return;
+                }
+
+                _availableModuleUpdate = result.Release;
+                string availableStatus = string.Format(
+                    Localize("Module_update_available", "Version {0} is available (current {1})."),
+                    _moduleUpdateLatestVersion,
+                    _moduleUpdateCurrentVersion
+                );
+                if (!_moduleUpdateInstallationSupported && !string.IsNullOrWhiteSpace(_moduleUpdateInstallationUnavailableReason)) {
+                    availableStatus += " " + _moduleUpdateInstallationUnavailableReason;
+                }
+                SetModuleUpdateStatus(availableStatus);
+
+                if (ModuleUpdatePolicy.ShouldAutomaticallyInstall(
+                    _autoInstallAfterCheck,
+                    AutoUpdateEnabled,
+                    _moduleUpdateInstallationSupported,
+                    result.UpdateAvailable
+                )) {
+                    BeginModuleUpdateInstall();
+                }
+            } catch (OperationCanceledException) {
+                // Module unload cancels an in-flight request.
+            } catch (Exception exception) {
+                Logger.Warn(exception, "Failed to check GitHub for an Events Module update.");
+                SetModuleUpdateStatus(Localize("Module_update_check_failed", "The update check failed; the current version is still running."));
+            } finally {
+                _autoInstallAfterCheck = false;
+                ModuleUpdateStatusChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private string GetModuleUpdateFailureStatus(ModuleUpdateFailure failure) {
+            switch (failure) {
+                case ModuleUpdateFailure.InvalidCurrentVersion:
+                    return Localize("Module_update_invalid_current", "The installed module version cannot be used for update checks.");
+                case ModuleUpdateFailure.InvalidRelease:
+                    return Localize("Module_update_invalid_release", "GitHub did not return a valid stable module release.");
+                case ModuleUpdateFailure.MissingAsset:
+                    return Localize("Module_update_missing_asset", "The release does not contain Events.Module.bhm.");
+                case ModuleUpdateFailure.InvalidDigest:
+                    return Localize("Module_update_invalid_digest", "The release does not contain a valid SHA-256 digest.");
+                case ModuleUpdateFailure.InvalidAssetUrl:
+                    return Localize("Module_update_invalid_url", "The release download address is not trusted.");
+                default:
+                    return Localize("Module_update_check_failed", "The update check failed; the current version is still running.");
+            }
+        }
+
+        private void BeginModuleUpdateInstall() {
+            if (!CanInstallModuleUpdate || _currentModuleManager == null) return;
+
+            PkgManifestV1 package;
+            try {
+                package = CreateUpdatePackageManifest(_availableModuleUpdate, _currentModuleManager);
+            } catch (Exception exception) {
+                Logger.Warn(exception, "Failed to prepare the Events Module update package manifest.");
+                SetModuleUpdateStatus(Localize("Module_update_install_failed", "The update could not be installed; the current version is still running."));
+                return;
+            }
+
+            _moduleUpdateInstalling = true;
+            SetModuleUpdateStatus(string.Format(
+                Localize("Module_update_installing", "Downloading and verifying version {0}..."),
+                _availableModuleUpdate.Version
+            ));
+            _moduleUpdateInstallTask = InstallModuleUpdateAsync(package, _currentModuleManager, ModuleNamespace);
+            ModuleUpdateStatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private async Task InstallModuleUpdateAsync(PkgManifestV1 package, ModuleManager existingModule, string moduleNamespace) {
+            bool success = false;
+            string error = string.Empty;
+
+            try {
+                var result = await GameService.Module.ModulePkgRepoHandler
+                                              .InstallPackage(package, existingModule)
+                                              .ConfigureAwait(false);
+                success = result.Item2;
+                error = result.Item3;
+            } catch (Exception exception) {
+                error = exception.Message;
+                Logger.Warn(exception, "The Events Module update installation failed.");
+            }
+
+            GameService.Overlay.QueueMainThreadUpdate(delegate (GameTime gameTime) {
+                FinishModuleUpdateInstall(success, error, moduleNamespace);
+            });
+        }
+
+        private void FinishModuleUpdateInstall(bool success, string error, string moduleNamespace) {
+            _moduleUpdateInstalling = false;
+            _moduleUpdateInstallTask = null;
+
+            if (!success) {
+                if (!string.IsNullOrWhiteSpace(error)) {
+                    Logger.Warn("The Events Module update was rejected: {updateError}", error);
+                }
+                if (ReferenceEquals(ModuleInstance, this)) {
+                    SetModuleUpdateStatus(Localize("Module_update_install_failed", "The update could not be installed; the current version is still running."));
+                }
+                return;
+            }
+
+            if (GameService.Module.ModuleStates.Value.TryGetValue(moduleNamespace, out ModuleState state)) {
+                state.Enabled = true;
+            } else {
+                GameService.Module.ModuleStates.Value[moduleNamespace] = new ModuleState { Enabled = true };
+            }
+            GameService.Settings.Save();
+
+            if (ReferenceEquals(ModuleInstance, this)) {
+                SetModuleUpdateStatus(Localize("Module_update_restarting", "Update installed. Restarting Blish HUD..."));
+            }
+            GameService.Overlay.Restart();
+        }
+
+        private static PkgManifestV1 CreateUpdatePackageManifest(ModuleUpdateRelease release, ModuleManager currentModule) {
+            if (release == null) throw new ArgumentNullException(nameof(release));
+            if (currentModule?.Manifest == null) throw new ArgumentNullException(nameof(currentModule));
+
+            var contributors = new JArray();
+            foreach (ModuleContributor contributor in currentModule.Manifest.Contributors ?? new List<ModuleContributor>()) {
+                var contributorJson = new JObject { ["name"] = contributor.Name };
+                if (!string.IsNullOrWhiteSpace(contributor.Username)) contributorJson["username"] = contributor.Username;
+                if (!string.IsNullOrWhiteSpace(contributor.Url)) contributorJson["url"] = contributor.Url;
+                contributors.Add(contributorJson);
+            }
+            if (contributors.Count == 0) contributors.Add(new JObject { ["name"] = "Community" });
+
+            var packageJson = new JObject {
+                ["manifest_version"] = 1,
+                ["name"] = currentModule.Manifest.Name,
+                ["namespace"] = ModuleNamespace,
+                ["version"] = release.Version.ToString(),
+                ["contributors"] = contributors,
+                ["dependencies"] = new JObject { ["bh.blishhud"] = ">=1.0.0" },
+                ["location"] = release.AssetUrl,
+                ["hash"] = release.Sha256,
+                ["ispreview"] = false,
+                ["url"] = ProjectUrl,
+                ["description"] = currentModule.Manifest.Description
+            };
+
+            PkgManifestV1 package = JsonConvert.DeserializeObject<PkgManifestV1>(packageJson.ToString(Formatting.None));
+            return package ?? throw new InvalidOperationException("The update package manifest could not be created.");
+        }
+
+        private static bool TryGetModuleUpdateSupport(ModuleManager module, out string unavailableReason) {
+            unavailableReason = string.Empty;
+            string physicalPath = module?.DataReader?.PhysicalPath;
+
+            if (string.IsNullOrWhiteSpace(physicalPath) ||
+                !physicalPath.EndsWith(".bhm", StringComparison.OrdinalIgnoreCase)) {
+                unavailableReason = Localize(
+                    "Module_update_unpacked_module",
+                    "Unpacked modules cannot replace themselves."
+                );
+                return false;
+            }
+
+            if (IsLoadedByModuleArgument(physicalPath)) {
+                unavailableReason = Localize(
+                    "Module_update_debug_module",
+                    "Modules loaded with --module or -M cannot replace themselves."
+                );
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsLoadedByModuleArgument(string modulePath) {
+            string normalizedModulePath = NormalizePath(modulePath);
+            if (normalizedModulePath == null) return true;
+
+            string[] arguments = Environment.GetCommandLineArgs();
+            for (int index = 0; index < arguments.Length; index++) {
+                string argument = arguments[index] ?? string.Empty;
+                if (string.Equals(argument, "--module", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(argument, "-M", StringComparison.OrdinalIgnoreCase)) {
+                    if (index + 1 < arguments.Length && PathsEqual(normalizedModulePath, arguments[index + 1])) return true;
+                    continue;
+                }
+
+                foreach (string prefix in new[] { "--module=", "-M=" }) {
+                    if (argument.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                        PathsEqual(normalizedModulePath, argument.Substring(prefix.Length))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool PathsEqual(string normalizedModulePath, string candidatePath) {
+            string normalizedCandidate = NormalizePath(candidatePath);
+            return normalizedCandidate != null &&
+                   string.Equals(normalizedModulePath, normalizedCandidate, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizePath(string path) {
+            try {
+                return string.IsNullOrWhiteSpace(path) ? null : Path.GetFullPath(path.Trim('"'));
+            } catch {
+                return null;
+            }
+        }
+
+        private void SetModuleUpdateStatus(string status) {
+            if (string.Equals(ModuleUpdateStatus, status, StringComparison.Ordinal)) return;
+            ModuleUpdateStatus = status ?? string.Empty;
+            ModuleUpdateStatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DisposeModuleUpdater() {
+            CancellationTokenSource cancellation = _moduleUpdateCancellation;
+            ModuleUpdateService service = _moduleUpdateService;
+            Task<ModuleUpdateCheckResult> checkTask = _moduleUpdateCheckTask;
+
+            cancellation?.Cancel();
+            if (checkTask != null && !checkTask.IsCompleted) {
+                checkTask.ContinueWith(completed => {
+                    if (completed.IsFaulted) {
+                        Logger.Warn(completed.Exception, "The module update check ended during module unload.");
+                    }
+                    service?.Dispose();
+                    cancellation?.Dispose();
+                }, TaskScheduler.Default);
+            } else {
+                if (checkTask?.IsFaulted == true) {
+                    Logger.Warn(checkTask.Exception, "The module update check ended during module unload.");
+                }
+                service?.Dispose();
+                cancellation?.Dispose();
+            }
+
+            _moduleUpdateCheckTask = null;
+            _moduleUpdateService = null;
+            _moduleUpdateCancellation = null;
+            _currentModuleManager = null;
+            _availableModuleUpdate = null;
         }
 
         private void ChangeLocalization(object sender, EventArgs e) {

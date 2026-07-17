@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($SourceBhm)) {
-    $SourceBhm = Join-Path $RepoRoot "artifacts\Events-and-Metas-Observer-zh-TW\Events Module.bhm"
+    $SourceBhm = Join-Path $RepoRoot "artifacts\Events-and-Metas-Observer-zh-TW\Events.Module.bhm"
 }
 
 if ([string]::IsNullOrWhiteSpace($DestinationBhm)) {

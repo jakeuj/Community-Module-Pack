@@ -1,4 +1,4 @@
 interface:
   display_name: "Events Module 繁中建置與維護"
-  short_description: "同步官方時程、獎勵與雙語名稱，驗證並安全部署繁中 BHM"
-  default_prompt: "使用 $localize-build-events-module 對齊官方時程、世界王獎勵與中英文事件名稱，完成驗證、建置及本機版本檢查。"
+  short_description: "同步官方時程、維護自動更新並驗證繁中 BHM 發行"
+  default_prompt: "使用 $localize-build-events-module 維護 Events 模組繁中資料、自動更新、建置驗證與安全發行流程。"

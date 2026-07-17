@@ -7,10 +7,10 @@
 
   "description": "Displays upcoming events and metas and gives you the option to subscribe to in-game notifications for when they're going to be starting soon.",
   "dependencies": {
-    "bh.blishhud": ">=0.11.0"
+    "bh.blishhud": ">=1.0.0"
   },
   "directories": [ "events-cache" ],
-  "url": "https://github.com/blish-hud/Blish-HUD",
+  "url": "https://github.com/jakeuj/Community-Module-Pack",
   "contributors": [
     {
       "name": "Community"

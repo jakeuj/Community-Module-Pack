@@ -4,6 +4,7 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
     [string]$OutDir = 'artifacts\Events-and-Metas-Observer-zh-TW',
+    [string]$PackageVersion,
     [switch]$SkipRestore
 )
 
@@ -14,6 +15,24 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..\..'))
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+}
+
+$hasPackageVersion = -not [string]::IsNullOrWhiteSpace($PackageVersion)
+$isStableReleaseBuild = $false
+if ($hasPackageVersion) {
+    $PackageVersion = $PackageVersion.Trim()
+    if ($PackageVersion -notmatch '^\d+\.\d+\.\d+-fork\.\d+(-test\d*)?$') {
+        throw "PackageVersion '$PackageVersion' must match X.Y.Z-fork.N or X.Y.Z-fork.N-testN."
+    }
+    $packageBaseVersion = [regex]::Match($PackageVersion, '^\d+\.\d+\.\d+').Value
+    $sourceManifest = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'Events Module\manifest.json') | ConvertFrom-Json
+    if ([string]$sourceManifest.version -ne $packageBaseVersion) {
+        throw "PackageVersion base '$packageBaseVersion' does not match source manifest version '$($sourceManifest.version)'."
+    }
+    if ($Configuration -ne 'Release') {
+        throw 'PackageVersion can only be used with a Release build.'
+    }
+    $isStableReleaseBuild = $PackageVersion -match '^\d+\.\d+\.\d+-fork\.\d+$'
 }
 
 function Find-MSBuild {
@@ -111,6 +130,7 @@ $arguments = @(
     "/p:Configuration=$Configuration",
     '/p:Platform=AnyCPU',
     '/p:ChineseBuild=true',
+    "/p:ReleaseBuild=$($isStableReleaseBuild.ToString().ToLowerInvariant())",
     "/p:OutDir=$outputPath",
     '/verbosity:minimal'
 )
@@ -125,12 +145,50 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $dll = Join-Path $outputPath 'Events Module.dll'
-$bhm = Join-Path $outputPath 'Events Module.bhm'
-foreach ($path in @($dll, $bhm)) {
+$builtBhm = Join-Path $outputPath 'Events Module.bhm'
+$bhm = Join-Path $outputPath 'Events.Module.bhm'
+foreach ($path in @($dll, $builtBhm)) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Expected build output was not created: $path"
     }
 }
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+if ($hasPackageVersion) {
+    $archive = [System.IO.Compression.ZipFile]::Open($builtBhm, [System.IO.Compression.ZipArchiveMode]::Update)
+    try {
+        $manifestEntry = $archive.GetEntry('manifest.json')
+        if ($null -eq $manifestEntry) {
+            throw 'BHM package is missing manifest.json.'
+        }
+
+        $reader = [System.IO.StreamReader]::new($manifestEntry.Open())
+        try {
+            $packageManifest = $reader.ReadToEnd() | ConvertFrom-Json
+        } finally {
+            $reader.Dispose()
+        }
+
+        $packageManifest.version = $PackageVersion
+        $manifestJson = $packageManifest | ConvertTo-Json -Depth 10
+        $manifestEntry.Delete()
+
+        $newManifestEntry = $archive.CreateEntry('manifest.json', [System.IO.Compression.CompressionLevel]::Optimal)
+        $writer = [System.IO.StreamWriter]::new(
+            $newManifestEntry.Open(),
+            [System.Text.UTF8Encoding]::new($false)
+        )
+        try {
+            $writer.Write($manifestJson)
+        } finally {
+            $writer.Dispose()
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
+Copy-Item -LiteralPath $builtBhm -Destination $bhm -Force
 
 $assembly = [System.Reflection.Assembly]::LoadFile($dll)
 $resourceStream = $assembly.GetManifestResourceStream('Events_Module.Properties.Resources.resources')
@@ -149,7 +207,6 @@ if ($resourceCount -lt $validation.RequiredKeyCount) {
     throw "The DLL contains $resourceCount resources; expected at least $($validation.RequiredKeyCount)."
 }
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
 try {
     $requiredEntries = @('Events Module.dll', 'manifest.json', 'ref/events.json', 'ref/event-rewards.json') + @(
@@ -159,6 +216,32 @@ try {
         if ($null -eq $archive.GetEntry($entryName)) {
             throw "BHM package is missing $entryName."
         }
+    }
+
+    foreach ($forbiddenEntry in @('Blish HUD.exe', 'SemVer.dll')) {
+        if ($null -ne $archive.GetEntry($forbiddenEntry)) {
+            throw "BHM package must not contain host assembly $forbiddenEntry."
+        }
+    }
+
+    $manifestEntry = $archive.GetEntry('manifest.json')
+    $reader = [System.IO.StreamReader]::new($manifestEntry.Open())
+    try {
+        $packagedManifest = $reader.ReadToEnd() | ConvertFrom-Json
+    } finally {
+        $reader.Dispose()
+    }
+
+    $sourceManifest = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot 'Events Module\manifest.json') | ConvertFrom-Json
+    $expectedVersion = if ($hasPackageVersion) { $PackageVersion } else { [string]$sourceManifest.version }
+    if ([string]$packagedManifest.version -ne $expectedVersion) {
+        throw "BHM manifest version '$($packagedManifest.version)' does not match expected version '$expectedVersion'."
+    }
+    if ([string]$packagedManifest.dependencies.'bh.blishhud' -ne '>=1.0.0') {
+        throw "BHM manifest must require Blish HUD >=1.0.0."
+    }
+    if ([string]$packagedManifest.url -ne 'https://github.com/jakeuj/Community-Module-Pack') {
+        throw 'BHM manifest project URL does not point to the localization fork.'
     }
 } finally {
     $archive.Dispose()
@@ -171,9 +254,13 @@ $result = [pscustomobject]@{
     IconCount     = $iconFiles.Count
     DllSha256     = (Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash
     BhmSha256     = (Get-FileHash -LiteralPath $bhm -Algorithm SHA256).Hash
+    PackageVersion = $expectedVersion
+    SelfUpdateEnabled = $isStableReleaseBuild
 }
 
 Write-Host "BHM event icons: $($result.IconCount)"
 Write-Host "DLL SHA-256: $($result.DllSha256)"
 Write-Host "BHM SHA-256: $($result.BhmSha256)"
+Write-Host "Package version: $($result.PackageVersion)"
+Write-Host "Runtime self-update enabled: $($result.SelfUpdateEnabled)"
 $result

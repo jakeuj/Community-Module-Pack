@@ -8,12 +8,14 @@ on:
       - events-zh-tw-v*
     paths:
       - "Events Module/**"
+      - ".agents/skills/localize-build-events-module/scripts/build-events-zh-tw.ps1"
       - ".github/workflows/events-module-zh-tw.yml"
   pull_request:
     branches:
       - master
     paths:
       - "Events Module/**"
+      - ".agents/skills/localize-build-events-module/scripts/build-events-zh-tw.ps1"
       - ".github/workflows/events-module-zh-tw.yml"
   workflow_dispatch:
     inputs:
@@ -85,7 +87,17 @@ jobs:
             throw "Fork Release version '$version' must match events-zh-tw-vX.Y.Z-fork.N."
           }
 
+          $sourceBaseVersion = [string](Get-Content -Raw "Events Module\manifest.json" | ConvertFrom-Json).version
+          $tagBaseVersion = [regex]::Match($version, '^events-zh-tw-v(?<base>\d+\.\d+\.\d+)').Groups['base'].Value
+          if ($tagBaseVersion -ne $sourceBaseVersion) {
+            throw "Tag base version '$tagBaseVersion' does not match source manifest version '$sourceBaseVersion'."
+          }
+
+          $packageVersion = $version -replace '^events-zh-tw-v', ''
+          $isReleaseRun = "${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.ref_type }}" -eq "tag"
+
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "package_version=$(if ($isReleaseRun) { $packageVersion } else { '' })" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "Resolved fork release version: $version"
 
@@ -161,17 +173,18 @@ jobs:
       - name: Build Traditional Chinese BHM
         shell: pwsh
         run: |
-          $frameworkRoot = "$env:GITHUB_WORKSPACE\packages\Microsoft.NETFramework.ReferenceAssemblies.net472.1.0.3\build\"
-          $outDir = "$env:GITHUB_WORKSPACE\artifacts\Events-and-Metas-Observer-zh-TW\"
+          $arguments = @(
+            '-RepoRoot', $env:GITHUB_WORKSPACE,
+            '-Configuration', 'Release',
+            '-OutDir', 'artifacts\Events-and-Metas-Observer-zh-TW',
+            '-SkipRestore'
+          )
+          $packageVersion = "${{ steps.version.outputs.package_version }}"
+          if (-not [string]::IsNullOrWhiteSpace($packageVersion)) {
+            $arguments += @('-PackageVersion', $packageVersion)
+          }
 
-          msbuild "Events Module\Events Module.csproj" `
-            /t:Rebuild `
-            /p:Configuration=Release `
-            /p:Platform=AnyCPU `
-            /p:ChineseBuild=true `
-            "/p:TargetFrameworkRootPath=$frameworkRoot" `
-            "/p:OutDir=$outDir" `
-            /verbosity:minimal
+          & ".agents\skills\localize-build-events-module\scripts\build-events-zh-tw.ps1" @arguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify package
@@ -179,7 +192,7 @@ jobs:
         run: |
           $outDir = "$env:GITHUB_WORKSPACE\artifacts\Events-and-Metas-Observer-zh-TW"
           $dll = Join-Path $outDir "Events Module.dll"
-          $bhm = Join-Path $outDir "Events Module.bhm"
+          $bhm = Join-Path $outDir "Events.Module.bhm"
 
           if (-not (Test-Path $dll)) { throw "Missing compiled DLL: $dll" }
           if (-not (Test-Path $bhm)) { throw "Missing BHM package: $bhm" }
@@ -211,6 +224,30 @@ jobs:
             "shackles-of-the-ancients.png"
           )
           try {
+            $manifestEntry = $archive.GetEntry("manifest.json")
+            if ($null -eq $manifestEntry) {
+              throw "BHM does not contain manifest.json."
+            }
+            $reader = [System.IO.StreamReader]::new($manifestEntry.Open())
+            try {
+              $manifest = $reader.ReadToEnd() | ConvertFrom-Json
+            } finally {
+              $reader.Dispose()
+            }
+
+            $expectedVersion = "${{ steps.version.outputs.package_version }}"
+            if ([string]::IsNullOrWhiteSpace($expectedVersion)) {
+              $expectedVersion = [string](Get-Content -Raw "Events Module\manifest.json" | ConvertFrom-Json).version
+            }
+            if ([string]$manifest.version -ne $expectedVersion) {
+              throw "BHM manifest version '$($manifest.version)' does not match '$expectedVersion'."
+            }
+            if ([string]$manifest.dependencies.'bh.blishhud' -ne ">=1.0.0") {
+              throw "BHM manifest does not require Blish HUD >=1.0.0."
+            }
+            if ([string]$manifest.url -ne "https://github.com/jakeuj/Community-Module-Pack") {
+              throw "BHM manifest project URL does not point to this fork."
+            }
             if ($null -eq $archive.GetEntry("Events Module.dll")) {
               throw "BHM does not contain Events Module.dll."
             }
@@ -225,6 +262,11 @@ jobs:
                 throw "BHM does not contain ref/textures/events/$icon."
               }
             }
+            foreach ($forbiddenEntry in @("Blish HUD.exe", "SemVer.dll")) {
+              if ($null -ne $archive.GetEntry($forbiddenEntry)) {
+                throw "BHM must not package host assembly $forbiddenEntry."
+              }
+            }
           } finally {
             $archive.Dispose()
           }
@@ -235,7 +277,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Events-Module-zh-TW-${{ steps.version.outputs.version }}
-          path: artifacts/Events-and-Metas-Observer-zh-TW/Events Module.bhm
+          path: artifacts/Events-and-Metas-Observer-zh-TW/Events.Module.bhm
           if-no-files-found: error
 
       - name: Create tag for manual release
@@ -312,7 +354,7 @@ jobs:
               "",
               "## 安裝方式",
               "",
-              "- 下載下方的 `Events Module.bhm`。",
+              "- 下載下方的 `Events.Module.bhm`。",
               "- 將檔案放入 Blish HUD 的模組資料夾，完全重新啟動 Blish HUD。",
               "",
               "## 版本說明",
@@ -349,7 +391,7 @@ jobs:
                           "Only include changes relevant to the Events Module localization, package, or release workflow.",
                           "Omit unrelated repository changes such as GitHub Pages work.",
                           "Format commit hashes as inline code, never as issue or pull request numbers.",
-                          "Include installation instructions for Events Module.bhm.",
+                          "Include installation instructions for Events.Module.bhm.",
                           "Return Markdown without wrapping it in a fenced code block.",
                         ].join(" "),
                       },
@@ -396,7 +438,7 @@ jobs:
         run: |
           $tag = "${{ steps.version.outputs.version }}"
           $repo = "${{ github.repository }}"
-          $asset = "artifacts\Events-and-Metas-Observer-zh-TW\Events Module.bhm"
+          $asset = "artifacts\Events-and-Metas-Observer-zh-TW\Events.Module.bhm"
           $notesFile = "${{ steps.notes.outputs.path }}"
           $title = "Events and Metas Observer 繁中 $tag"
 
@@ -431,3 +473,45 @@ jobs:
             gh @createArgs
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify published release digest
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/events-zh-tw-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.version.outputs.version }}"
+          $repo = "${{ github.repository }}"
+          $localAsset = "artifacts\Events-and-Metas-Observer-zh-TW\Events.Module.bhm"
+          $localSha256 = (Get-FileHash -LiteralPath $localAsset -Algorithm SHA256).Hash.ToLowerInvariant()
+
+          $release = $null
+          for ($attempt = 1; $attempt -le 6; $attempt++) {
+            $release = gh api "repos/$repo/releases/tags/$tag" 2>$null | ConvertFrom-Json
+            if ($LASTEXITCODE -eq 0 -and $null -ne $release) {
+              $readyAssets = @($release.assets | Where-Object {
+                [string]$_.name -ceq 'Events.Module.bhm' -and
+                [string]$_.digest -match '^sha256:[0-9a-fA-F]{64}$'
+              })
+              if ($readyAssets.Count -eq 1) { break }
+            }
+            $release = $null
+            Start-Sleep -Seconds 2
+          }
+          if ($null -eq $release) {
+            throw "Published release $tag could not be read back from GitHub."
+          }
+
+          $matchingAssets = @($release.assets | Where-Object { [string]$_.name -ceq 'Events.Module.bhm' })
+          if ($matchingAssets.Count -ne 1) {
+            throw "Release $tag must contain exactly one Events.Module.bhm asset."
+          }
+          $digest = [string]$matchingAssets[0].digest
+          if ($digest -notmatch '^sha256:(?<hash>[0-9a-fA-F]{64})$') {
+            throw "GitHub did not report a valid SHA-256 digest for Events.Module.bhm."
+          }
+          if ($Matches.hash.ToLowerInvariant() -ne $localSha256) {
+            throw "Published digest '$digest' does not match local SHA-256 '$localSha256'."
+          }
+
+          Write-Host "Verified published Events.Module.bhm digest: sha256:$localSha256"

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Events_Module {
@@ -84,6 +86,7 @@ namespace Events_Module {
 
             RunIconMatcherTests();
             RunRewardCatalogTests();
+            RunModuleUpdateTests();
 
             bool productionGuardRejectedFixture = false;
             try {
@@ -246,6 +249,199 @@ namespace Events_Module {
             );
         }
 
+        private static void RunModuleUpdateTests() {
+            Assert(ModuleReleaseVersion.TryParseManifestVersion("1.0.9", out ModuleReleaseVersion baseVersion),
+                   "A source manifest version without fork metadata should be accepted.");
+            Assert(ModuleReleaseVersion.TryParseManifestVersion("1.0.9-fork.4", out ModuleReleaseVersion forkVersion),
+                   "A packaged fork version should be accepted.");
+            Assert(baseVersion.CompareTo(forkVersion) < 0, "A fork release should be newer than its base source version.");
+            Assert(!ModuleReleaseVersion.TryParseManifestVersion("1.0", out _), "Malformed manifest versions must be rejected.");
+            Assert(!ModuleReleaseVersion.TryParseReleaseTag("events-zh-tw-v1.0.9", out _),
+                   "Release tags without fork metadata must be ignored.");
+            Assert(!ModuleReleaseVersion.TryParseReleaseTag("events-zh-tw-v1.0.9-fork.5-test", out _),
+                   "Test release tags must be ignored.");
+            Assert(ModuleReleaseVersion.TryParseReleaseTag("events-zh-tw-v1.1.0-fork.1", out ModuleReleaseVersion nextBase),
+                   "A stable fork release tag should be accepted.");
+            Assert(nextBase.CompareTo(forkVersion) > 0, "Base module upgrades must take precedence over fork counters.");
+
+            Assert(ModuleUpdatePolicy.ShouldAutomaticallyInstall(true, true, true, true),
+                   "An enabled startup update should install a valid supported release.");
+            Assert(!ModuleUpdatePolicy.ShouldAutomaticallyInstall(true, false, true, true),
+                   "Disabling automatic updates must prevent startup installation.");
+            Assert(!ModuleUpdatePolicy.ShouldAutomaticallyInstall(false, true, true, true),
+                   "Enabling the setting after a completed check must not suddenly install an update.");
+            Assert(!ModuleUpdatePolicy.ShouldAutomaticallyInstall(true, true, false, true),
+                   "Debug and unpacked modules must not install updates.");
+
+            string validDigest = "sha256:" + new string('a', 64);
+            ModuleUpdateCheckResult available = CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events.Module.bhm", validDigest)
+            );
+            Assert(available.UpdateAvailable, "A newer stable fork release should be offered.");
+            Assert(available.Release.Sha256 == new string('A', 64), "The SHA-256 digest should be normalized for Blish HUD.");
+
+            ModuleUpdateCheckResult fromBase = CheckRelease(
+                "1.0.9",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.1", "Events.Module.bhm", validDigest)
+            );
+            Assert(fromBase.UpdateAvailable, "The first fork should update an upstream base-version package.");
+
+            ModuleUpdateCheckResult same = CheckRelease(
+                "1.0.9-fork.5",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events.Module.bhm", validDigest)
+            );
+            Assert(!same.UpdateAvailable, "The same package version must not update itself.");
+
+            ModuleUpdateCheckResult downgrade = CheckRelease(
+                "1.1.0-fork.1",
+                CreateReleaseJson("events-zh-tw-v1.0.99-fork.99", "Events.Module.bhm", validDigest)
+            );
+            Assert(!downgrade.UpdateAvailable, "Older base versions must never be installed, regardless of fork counter.");
+
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events Module.bhm", validDigest)
+            ).Failure == ModuleUpdateFailure.MissingAsset, "Only the exact Events.Module.bhm asset name should be accepted.");
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events.Module.bhm", "sha256:1234")
+            ).Failure == ModuleUpdateFailure.InvalidDigest, "Malformed release digests must be rejected.");
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson(
+                    "events-zh-tw-v1.0.9-fork.5",
+                    "Events.Module.bhm",
+                    validDigest,
+                    "https://example.com/Events.Module.bhm"
+                )
+            ).Failure == ModuleUpdateFailure.InvalidAssetUrl, "Non-GitHub asset URLs must be rejected.");
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events.Module.bhm", validDigest, draft: true)
+            ).Failure == ModuleUpdateFailure.InvalidRelease, "Draft releases must be ignored.");
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5", "Events.Module.bhm", validDigest, prerelease: true)
+            ).Failure == ModuleUpdateFailure.InvalidRelease, "Prereleases must be ignored.");
+            Assert(CheckRelease(
+                "1.0.9-fork.4",
+                CreateReleaseJson("events-zh-tw-v1.0.9-fork.5-test1", "Events.Module.bhm", validDigest)
+            ).Failure == ModuleUpdateFailure.InvalidRelease, "Test-tag releases must be ignored.");
+
+            using (var invalidCurrentService = new ModuleUpdateService(new StubHttpHandler((request, token) => {
+                throw new InvalidOperationException("HTTP should not be called for an invalid installed version.");
+            }))) {
+                ModuleUpdateCheckResult invalidCurrent = invalidCurrentService.CheckAsync("invalid", CancellationToken.None)
+                                                                             .GetAwaiter()
+                                                                             .GetResult();
+                Assert(invalidCurrent.Failure == ModuleUpdateFailure.InvalidCurrentVersion,
+                       "Invalid installed versions should stop before making an HTTP request.");
+            }
+
+            AssertUpdateCheckThrows<Newtonsoft.Json.JsonReaderException>(
+                new StubHttpHandler((request, token) => Task.FromResult(Response(HttpStatusCode.OK, "not-json"))),
+                "Invalid GitHub JSON must fail without producing an update."
+            );
+            AssertUpdateCheckThrows<HttpRequestException>(
+                new StubHttpHandler((request, token) => Task.FromResult(Response(HttpStatusCode.Forbidden, "forbidden"))),
+                "GitHub HTTP 403 must fail the update check."
+            );
+            AssertUpdateCheckThrows<HttpRequestException>(
+                new StubHttpHandler((request, token) => Task.FromResult(Response(HttpStatusCode.NotFound, "missing"))),
+                "GitHub HTTP 404 must fail the update check."
+            );
+
+            using (var timeoutService = new ModuleUpdateService(
+                new StubHttpHandler(async (request, token) => {
+                    await Task.Delay(Timeout.Infinite, token);
+                    return Response(HttpStatusCode.OK, "{}");
+                }),
+                TimeSpan.FromMilliseconds(25)
+            )) {
+                bool timedOut = false;
+                try {
+                    timeoutService.CheckAsync("1.0.9-fork.4", CancellationToken.None).GetAwaiter().GetResult();
+                } catch (OperationCanceledException) {
+                    timedOut = true;
+                }
+                Assert(timedOut, "The GitHub update check must honor its HTTP timeout.");
+            }
+
+            using (var cancellation = new CancellationTokenSource())
+            using (var cancellationService = new ModuleUpdateService(new StubHttpHandler(async (request, token) => {
+                await Task.Delay(Timeout.Infinite, token);
+                return Response(HttpStatusCode.OK, "{}");
+            }))) {
+                Task<ModuleUpdateCheckResult> check = cancellationService.CheckAsync("1.0.9-fork.4", cancellation.Token);
+                cancellation.Cancel();
+                bool canceled = false;
+                try {
+                    check.GetAwaiter().GetResult();
+                } catch (OperationCanceledException) {
+                    canceled = true;
+                }
+                Assert(canceled, "Unloading the module must be able to cancel an in-flight GitHub request.");
+            }
+        }
+
+        private static ModuleUpdateCheckResult CheckRelease(string currentVersion, string json) {
+            using (var service = new ModuleUpdateService(new StubHttpHandler((request, token) =>
+                Task.FromResult(Response(HttpStatusCode.OK, json))))) {
+                return service.CheckAsync(currentVersion, CancellationToken.None).GetAwaiter().GetResult();
+            }
+        }
+
+        private static string CreateReleaseJson(
+            string tag,
+            string assetName,
+            string digest,
+            string assetUrl = null,
+            bool draft = false,
+            bool prerelease = false
+        ) {
+            assetUrl = assetUrl ?? $"https://github.com/jakeuj/Community-Module-Pack/releases/download/{tag}/Events.Module.bhm";
+            return new JObject {
+                ["tag_name"] = tag,
+                ["draft"] = draft,
+                ["prerelease"] = prerelease,
+                ["assets"] = new JArray(new JObject {
+                    ["name"] = assetName,
+                    ["browser_download_url"] = assetUrl,
+                    ["digest"] = digest
+                })
+            }.ToString();
+        }
+
+        private static HttpResponseMessage Response(HttpStatusCode statusCode, string content) {
+            return new HttpResponseMessage(statusCode) { Content = new StringContent(content) };
+        }
+
+        private static void AssertUpdateCheckThrows<TException>(HttpMessageHandler handler, string message)
+            where TException : Exception {
+            bool threw = false;
+            using (var service = new ModuleUpdateService(handler)) {
+                try {
+                    service.CheckAsync("1.0.9-fork.4", CancellationToken.None).GetAwaiter().GetResult();
+                } catch (TException) {
+                    threw = true;
+                }
+            }
+            Assert(threw, message);
+        }
+
+        private sealed class StubHttpHandler : HttpMessageHandler {
+            private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _sendAsync;
+
+            public StubHttpHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync) {
+                _sendAsync = sendAsync;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+                return _sendAsync(request, cancellationToken);
+            }
+        }
+
         private static void RunLiveAudit() {
             string endpoint = OfficialEventTimerEndpoint.ApiEndpoint + "?action=query&prop=revisions&titles=Widget%3AEvent_timer%2Fdata.json&rvprop=ids%7Ctimestamp%7Csha1%7Ccontent&rvslots=main&format=json&formatversion=2&maxlag=5";
             string response;
@@ -292,6 +488,16 @@ namespace Events_Module {
                                            .Count();
             Assert(matchedRewardCount == 13,
                    $"Expected all 13 core world boss rewards to match the live Widget; matched {matchedRewardCount}.");
+
+            using (var updateService = new ModuleUpdateService()) {
+                ModuleUpdateCheckResult updateResult = updateService.CheckAsync("0.0.0", CancellationToken.None)
+                                                                          .GetAwaiter()
+                                                                          .GetResult();
+                Assert(updateResult.Failure == ModuleUpdateFailure.None && updateResult.Release != null,
+                       "The live latest stable GitHub Release must pass the updater's tag, asset, URL, and digest validation.");
+                Assert(updateResult.UpdateAvailable, "The current stable fork release should be newer than the live-audit baseline.");
+                Console.WriteLine($"Live updater audit passed: {updateResult.Release.TagName}, SHA-256 {updateResult.Release.Sha256}.");
+            }
 
             Console.WriteLine($"Live audit passed: widget {parsed.Version}, {parsed.Events.Count} events, {matchedRewardCount} reward matches.");
         }

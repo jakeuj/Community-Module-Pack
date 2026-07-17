@@ -461,4 +461,67 @@
   <data name="Reward_note_tequatl" xml:space="preserve">
     <value>此數量只計算地面的巨龍寶箱，不包含英雄寶箱。</value>
   </data>
+  <data name="Module_update_title" xml:space="preserve">
+    <value>模組更新</value>
+  </data>
+  <data name="Module_auto_update" xml:space="preserve">
+    <value>自動更新此模組</value>
+  </data>
+  <data name="Module_auto_update_tooltip" xml:space="preserve">
+    <value>在下次載入模組時安裝 GitHub 穩定版；更新成功後會立即重新啟動 Blish HUD。</value>
+  </data>
+  <data name="Module_update_development_build" xml:space="preserve">
+    <value>開發建置已停用自動更新。</value>
+  </data>
+  <data name="Module_update_unpacked_module" xml:space="preserve">
+    <value>解壓縮載入的模組無法自行替換。</value>
+  </data>
+  <data name="Module_update_debug_module" xml:space="preserve">
+    <value>透過 --module 或 -M 載入的模組無法自行替換。</value>
+  </data>
+  <data name="Module_update_checking" xml:space="preserve">
+    <value>正在檢查 GitHub 模組更新…</value>
+  </data>
+  <data name="Module_update_up_to_date" xml:space="preserve">
+    <value>目前版本 {0} 已是最新版。</value>
+  </data>
+  <data name="Module_update_available" xml:space="preserve">
+    <value>已有版本 {0}（目前為 {1}）。</value>
+  </data>
+  <data name="Module_update_versions" xml:space="preserve">
+    <value>目前版本：{0}；已檢查的最新版本：{1}</value>
+  </data>
+  <data name="Module_update_invalid_current" xml:space="preserve">
+    <value>目前安裝的模組版號無法用來檢查更新。</value>
+  </data>
+  <data name="Module_update_invalid_release" xml:space="preserve">
+    <value>GitHub 未回傳有效的穩定版模組。</value>
+  </data>
+  <data name="Module_update_missing_asset" xml:space="preserve">
+    <value>此版本缺少 Events.Module.bhm。</value>
+  </data>
+  <data name="Module_update_invalid_digest" xml:space="preserve">
+    <value>此版本缺少有效的 SHA-256 摘要。</value>
+  </data>
+  <data name="Module_update_invalid_url" xml:space="preserve">
+    <value>此版本的下載網址不受信任。</value>
+  </data>
+  <data name="Module_update_check_failed" xml:space="preserve">
+    <value>檢查更新失敗；目前版本會繼續運作。</value>
+  </data>
+  <data name="Module_update_installing" xml:space="preserve">
+    <value>正在下載並驗證版本 {0}…</value>
+  </data>
+  <data name="Module_update_install_failed" xml:space="preserve">
+    <value>無法安裝更新；目前版本會繼續運作。</value>
+  </data>
+  <data name="Module_update_restarting" xml:space="preserve">
+    <value>更新已安裝，正在重新啟動 Blish HUD…</value>
+  </data>
+  <data name="Module_update_check_again" xml:space="preserve">
+    <value>重新檢查</value>
+  </data>
+  <data name="Module_update_now" xml:space="preserve">
+    <value>立即更新</value>
+  </data>
 </root>

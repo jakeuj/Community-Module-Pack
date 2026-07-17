@@ -32,6 +32,9 @@
     <Compile Include="..\OfficialEventTimerData.cs">
       <Link>OfficialEventTimerData.cs</Link>
     </Compile>
+    <Compile Include="..\ModuleUpdateService.cs">
+      <Link>ModuleUpdateService.cs</Link>
+    </Compile>
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>

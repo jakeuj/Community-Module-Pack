@@ -503,4 +503,67 @@ Right click to dismiss.</value>
   <data name="Reward_note_tequatl" xml:space="preserve">
     <value>This amount covers the ground Dragon Chest only; the Hero's Chest is not counted.</value>
   </data>
+  <data name="Module_update_title" xml:space="preserve">
+    <value>Module updates</value>
+  </data>
+  <data name="Module_auto_update" xml:space="preserve">
+    <value>Automatically update this module</value>
+  </data>
+  <data name="Module_auto_update_tooltip" xml:space="preserve">
+    <value>Install stable GitHub releases at the next module load. A successful update restarts Blish HUD immediately.</value>
+  </data>
+  <data name="Module_update_development_build" xml:space="preserve">
+    <value>Automatic updates are disabled in development builds.</value>
+  </data>
+  <data name="Module_update_unpacked_module" xml:space="preserve">
+    <value>Unpacked modules cannot replace themselves.</value>
+  </data>
+  <data name="Module_update_debug_module" xml:space="preserve">
+    <value>Modules loaded with --module or -M cannot replace themselves.</value>
+  </data>
+  <data name="Module_update_checking" xml:space="preserve">
+    <value>Checking GitHub for module updates...</value>
+  </data>
+  <data name="Module_update_up_to_date" xml:space="preserve">
+    <value>Current version {0} is up to date.</value>
+  </data>
+  <data name="Module_update_available" xml:space="preserve">
+    <value>Version {0} is available (current {1}).</value>
+  </data>
+  <data name="Module_update_versions" xml:space="preserve">
+    <value>Current: {0}; latest checked: {1}</value>
+  </data>
+  <data name="Module_update_invalid_current" xml:space="preserve">
+    <value>The installed module version cannot be used for update checks.</value>
+  </data>
+  <data name="Module_update_invalid_release" xml:space="preserve">
+    <value>GitHub did not return a valid stable module release.</value>
+  </data>
+  <data name="Module_update_missing_asset" xml:space="preserve">
+    <value>The release does not contain Events.Module.bhm.</value>
+  </data>
+  <data name="Module_update_invalid_digest" xml:space="preserve">
+    <value>The release does not contain a valid SHA-256 digest.</value>
+  </data>
+  <data name="Module_update_invalid_url" xml:space="preserve">
+    <value>The release download address is not trusted.</value>
+  </data>
+  <data name="Module_update_check_failed" xml:space="preserve">
+    <value>The update check failed; the current version is still running.</value>
+  </data>
+  <data name="Module_update_installing" xml:space="preserve">
+    <value>Downloading and verifying version {0}...</value>
+  </data>
+  <data name="Module_update_install_failed" xml:space="preserve">
+    <value>The update could not be installed; the current version is still running.</value>
+  </data>
+  <data name="Module_update_restarting" xml:space="preserve">
+    <value>Update installed. Restarting Blish HUD...</value>
+  </data>
+  <data name="Module_update_check_again" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="Module_update_now" xml:space="preserve">
+    <value>Update now</value>
+  </data>
 </root>
