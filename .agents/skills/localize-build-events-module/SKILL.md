@@ -1,6 +1,6 @@
 ---
 name: localize-build-events-module
-description: Localize, audit, build, test, package, safely install, self-update, release, and document the Community-Module-Pack Events and Metas Observer for Taiwan Traditional Chinese. Use when translating official Guild Wars 2 Wiki Event timer or bundled events.json names; preserving bilingual search/display; auditing Wiki-sourced world-boss rewards; diagnosing localization, schedule, waypoint, cache, parser, icon, package, or installed-BHM regressions; implementing or troubleshooting stable GitHub Release auto-update, autoUpdate settings, SHA-256 replacement, restart, or debug-module protection; injecting fork package versions without source-manifest churn; maintaining the events-module-zh-tw workflow and release digest checks; publishing a fork release; or updating its GitHub Pages landing page.
+description: Localize, audit, build, test, package, safely install, self-update, release, document, and present the Community-Module-Pack Events and Metas Observer for Taiwan Traditional Chinese. Use when translating the official Guild Wars 2 Wiki Event timer or bundled events.json names; preserving bilingual search/display; auditing Wiki-sourced world-boss rewards; diagnosing localization, schedule, waypoint, cache, parser, icon, package, or installed-BHM regressions; implementing or troubleshooting stable GitHub Release auto-update, autoUpdate settings, SHA-256 replacement, restart, or debug-module protection; injecting fork package versions without source-manifest churn; maintaining the events-module-zh-tw workflow and release digest checks; publishing a fork release; or building, validating, optimizing, and deploying the jakeuj GW2 Tools GitHub Pages landing page and tool portfolio.
 ---
 
 # Localize, update, test, and release Events Module
@@ -28,7 +28,7 @@ Treat the official English Guild Wars 2 Wiki timer data as the schedule authorit
 ## Workflow
 
 1. Inspect `git status` and preserve unrelated changes.
-2. Read [references/events-module.md](references/events-module.md) for the relevant task area before changing source wiring, runtime keys, parser/cache behavior, icons, CI/CD, releases, or GitHub Pages.
+2. Read [references/events-module.md](references/events-module.md) for the relevant task area before changing source wiring, runtime keys, parser/cache behavior, icons, CI/CD, releases, GitHub Pages, or the site's release metadata and assets.
 3. Run localization coverage before editing:
 
    ```powershell
@@ -80,7 +80,22 @@ Treat the official English Guild Wars 2 Wiki timer data as the schedule authorit
    ```
 
    The script refuses to overwrite a loaded module, creates a timestamped backup, replaces through a verified temporary copy, and checks the final SHA-256 and packaged icons.
-14. Report test results, official Widget version/event count and reward-match count, live GitHub tag/digest when audited, DLL/BHM paths, packaged version, self-update gate state, embedded resource and event-icon counts, built/installed SHA-256 comparison, and whether a Blish HUD restart is still required. Tag, publish, install, or update the live website only when the user explicitly asks.
+14. When the GitHub Pages site is in scope, keep it progressively enhanced and validate it locally:
+
+   ```powershell
+   & .agents\skills\localize-build-events-module\scripts\test-events-landing-page.ps1
+   ```
+
+   Keep the stable release fallback usable without JavaScript, accept only the exact stable release contract before replacing its version text, and preserve keyboard, touch, reduced-motion, and no-JavaScript behavior. Re-run coverage and the live audit before publishing changed statistics or release claims.
+15. Only when the user explicitly asks to publish the website, push the intended commit to the fork's `master`, then wait for `master:/docs` to build that exact commit and verify the public site:
+
+   ```powershell
+   & .agents\skills\localize-build-events-module\scripts\test-events-landing-page.ps1 `
+       -Live -WaitForCommit (git rev-parse HEAD)
+   ```
+
+   Do not create a module tag or Release for a website-only deployment. Do not push website work to the upstream `origin`.
+16. Report test results, official Widget version/event count and reward-match count, live GitHub tag/digest when audited, DLL/BHM paths, packaged version, self-update gate state, embedded resource and event-icon counts, built/installed SHA-256 comparison, Pages commit/build state when deployed, and whether a Blish HUD restart is still required. Tag, publish, install, or update the live website only when the user explicitly asks.
 
 ## Guardrails
 
@@ -100,7 +115,12 @@ Treat the official English Guild Wars 2 Wiki timer data as the schedule authorit
 - During Codex-driven local installation, never close Blish HUD automatically. Refuse installation while it is running and ask the user to exit it first. This does not prohibit the module's user-enabled updater from restarting Blish HUD after a verified successful update.
 - Treat `Events.Module.bhm` as the release/installable deliverable; use the safe installation script instead of copying over a loaded module by hand.
 - Keep the source manifest at the upstream base `X.Y.Z`; inject `X.Y.Z-fork.N` only into the packaged manifest. Do not create a tag or Release merely to test this gate.
+- Keep the site as static `docs/index.html`, `docs/styles.css`, `docs/script.js`, and local `docs/assets/`; do not make core content or downloads depend on JavaScript or another jakeuj site being available.
+- Use only original site artwork, project-owned screenshots, and module-owned icons. Borrow GW2 visual language without copying ArenaNet logos, characters, promotional art, or implying official endorsement.
+- Keep the site's GitHub Release request at a 3-second timeout. On API, schema, tag, asset, trusted-URL, or digest failure, retain the HTML fallback version and working unversioned download link.
+- Disable continuous motion for `prefers-reduced-motion`, limit pointer effects to precise pointers, lazy-load noncritical images, and provide AVIF/WebP sources with a conventional fallback where practical.
+- Keep technical counts and claims traceable to coverage, live audit, workflow, source, or Release metadata. Do not invent performance, download, or official-certification claims.
 
 ## Detailed reference
 
-Use [references/events-module.md](references/events-module.md) for file paths, official MediaWiki requests, reward data and bilingual-name rules, runtime localization, source fallback, self-update implementation and failure rules, testing, build and local-install verification, troubleshooting, release tags/digests, and GitHub Pages deployment.
+Use [references/events-module.md](references/events-module.md) for file paths, official MediaWiki requests, reward data and bilingual-name rules, runtime localization, source fallback, self-update implementation and failure rules, testing, build and local-install verification, troubleshooting, release tags/digests, and the GitHub Pages content, performance, accessibility, validation, and deployment contracts.

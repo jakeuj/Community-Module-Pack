@@ -1,4 +1,4 @@
 interface:
   display_name: "Events Module 繁中建置與維護"
-  short_description: "同步官方時程、維護自動更新並驗證繁中 BHM 發行"
-  default_prompt: "使用 $localize-build-events-module 維護 Events 模組繁中資料、自動更新、建置驗證與安全發行流程。"
+  short_description: "同步官方時程、建置安全更新並維護 GW2 品牌網站"
+  default_prompt: "使用 $localize-build-events-module 維護 Events 模組繁中資料、建置驗證、安全發行與 GitHub Pages 品牌網站。"
