@@ -3,185 +3,324 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Events and Metas Observer 台灣繁體中文版，提供穩定版自動更新、官方 Wiki 活動時程、中英文名稱對照、13 隻核心世界王獎勵、通知與離線備援。">
+    <meta name="description" content="jakeuj 維護的 GW2 Events and Metas Observer 台灣繁中版：官方 Wiki 活動時程、雙語事件名稱、13 隻世界王獎勵、離線備援與 SHA-256 安全自動更新。">
+    <meta name="author" content="jakeuj">
     <meta name="robots" content="index,follow,max-image-preview:large">
-    <meta name="theme-color" content="#101314">
+    <meta name="theme-color" content="#090e11">
     <link rel="canonical" href="https://gw.jakeuj.com/">
-    <meta name="application-name" content="Events and Metas Observer 繁中版">
+    <link rel="icon" type="image/png" href="./assets/favicon.png">
+    <link rel="preload" as="image" href="./assets/hero-tyria-map.avif" type="image/avif" fetchpriority="high">
+    <meta name="application-name" content="jakeuj GW2 Tools — Events and Metas Observer">
     <meta property="og:locale" content="zh_TW">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Events and Metas Observer 繁中版">
-    <meta property="og:title" content="GW2 Events and Metas Observer 繁體中文模組">
-    <meta property="og:description" content="fork.5 起支援安全自動更新，並提供官方 Wiki 活動時程、中英文名稱對照、13 隻核心世界王獎勵與離線備援。">
+    <meta property="og:site_name" content="jakeuj GW2 Tools">
+    <meta property="og:title" content="活動時程，獎勵也看懂｜GW2 Events 繁中版">
+    <meta property="og:description" content="不只是翻譯：官方 Wiki 資料管線、離線備援、世界王獎勵與 SHA-256 安全更新。">
     <meta property="og:url" content="https://gw.jakeuj.com/">
-    <meta property="og:image" content="https://gw.jakeuj.com/assets/events-module-rewards-bilingual.png">
-    <meta property="og:image:width" content="1691">
-    <meta property="og:image:height" content="1212">
-    <meta property="og:image:alt" content="GW2 Events and Metas Observer 繁中版實機畫面，顯示中英文事件名稱與世界王獎勵">
+    <meta property="og:image" content="https://gw.jakeuj.com/assets/jakeuj-gw2-tools-og.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="jakeuj GW2 Tools：活動時程，獎勵也看懂；104 個官方事件、13 隻世界王獎勵與 203 項繁中資源">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="GW2 Events and Metas Observer 繁體中文模組">
-    <meta name="twitter:description" content="支援穩定版自動更新、官方 Wiki 時程、中英文事件名稱與核心世界王獎勵的 Blish HUD 活動計時器。">
-    <meta name="twitter:image" content="https://gw.jakeuj.com/assets/events-module-rewards-bilingual.png">
-    <title>GW2 Events and Metas Observer 繁體中文模組</title>
+    <meta name="twitter:title" content="活動時程，獎勵也看懂｜GW2 Events 繁中版">
+    <meta name="twitter:description" content="jakeuj 維護的 Events and Metas Observer 台灣繁中版與工程案例。">
+    <meta name="twitter:image" content="https://gw.jakeuj.com/assets/jakeuj-gw2-tools-og.jpg">
+    <title>GW2 Events and Metas Observer 繁中版｜jakeuj GW2 Tools</title>
     <link rel="stylesheet" href="./styles.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "name": "Events and Metas Observer 台灣繁中版",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Windows",
+            "softwareVersion": "1.0.9-fork.5",
+            "description": "Guild Wars 2 的 Blish HUD 活動時程與通知模組，提供繁中介面、雙語事件名稱、世界王獎勵與安全自動更新。",
+            "downloadUrl": "https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm",
+            "isAccessibleForFree": true,
+            "author": { "@type": "Person", "name": "jakeuj", "url": "https://github.com/jakeuj" }
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "name": "Community Module Pack — Events zh-TW fork",
+            "codeRepository": "https://github.com/jakeuj/Community-Module-Pack",
+            "programmingLanguage": ["C#", "PowerShell", "HTML", "CSS", "JavaScript"],
+            "license": "https://github.com/jakeuj/Community-Module-Pack/blob/master/LICENSE",
+            "author": { "@type": "Person", "name": "jakeuj", "url": "https://github.com/jakeuj" }
+          }
+        ]
+      }
+    </script>
+    <script src="./script.js" defer></script>
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="回到頁面頂端">
-        <span class="brand-mark" aria-hidden="true">◆</span>
-        <span>GW2 繁中工具</span>
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="jakeuj GW2 Tools，回到頁面頂端">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span><strong>jakeuj</strong><small>GW2 Tools</small></span>
       </a>
-      <nav aria-label="頁面導覽">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+        <span class="sr-only">開啟導覽選單</span>
+        <i aria-hidden="true"></i><i aria-hidden="true"></i>
+      </button>
+      <nav id="primary-nav" aria-label="主要導覽">
         <a href="#preview">實機畫面</a>
-        <a href="#auto-update">自動更新</a>
-        <a href="#features">功能</a>
+        <a href="#engineering">工程案例</a>
+        <a href="#evolution">版本演進</a>
         <a href="#install">安裝</a>
-        <a href="#more-tools">更多插件</a>
+        <a href="#tools">GW2 工具箱</a>
       </nav>
     </header>
 
-    <main id="top">
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-copy">
-          <p class="eyebrow">Guild Wars 2 · Blish HUD Module</p>
-          <div class="status-pill"><span aria-hidden="true"></span>v1.0.9-fork.5 · 穩定版自動更新</div>
-          <h1 id="page-title">活動時程，<br><em>獎勵也看懂。</em></h1>
-          <p class="lead">
-            繁中名稱下方保留官方英文原名，方便直接對照英文攻略。13 隻核心世界王另有保底裝備、龍晶礦與每日限制摘要，活動時間、地圖與傳送點仍跟隨 Guild Wars 2 官方 Wiki 更新。fork.5 起還能安全跟隨後續穩定版。
-          </p>
-          <div class="actions" aria-label="主要操作">
-            <a class="button primary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm">下載最新版 <span aria-hidden="true">↓</span></a>
-            <a class="button secondary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest">查看版本資訊</a>
+    <main id="main-content">
+      <section id="top" class="hero" aria-labelledby="page-title">
+        <div class="hero-art" aria-hidden="true"></div>
+        <div class="hero-grid shell">
+          <div class="hero-copy reveal">
+            <p class="eyebrow">Guild Wars 2 · Blish HUD Module</p>
+            <div class="hero-meta">
+              <span class="status-pill" id="release-status" data-fallback-version="1.0.9-fork.5">
+                <i aria-hidden="true"></i>
+                <span data-release-version>v1.0.9-fork.5</span>
+                <span class="status-copy">穩定版自動更新</span>
+              </span>
+              <a class="maker-link" href="https://github.com/jakeuj">Built &amp; maintained by <strong>jakeuj</strong></a>
+            </div>
+            <h1 id="page-title">活動時程，<br><em>獎勵也看懂。</em></h1>
+            <p class="lead">
+              不只是翻譯。繁中與官方英文名稱、13 隻核心世界王獎勵、官方 Wiki 即時時程、離線備援與安全更新，都整理在同一個可靠的 Blish HUD 模組裡。
+            </p>
+            <div class="actions" aria-label="主要操作">
+              <a class="button primary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm">下載最新版 <span aria-hidden="true">↓</span></a>
+              <a class="button secondary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest">Release</a>
+              <a class="button ghost" href="https://github.com/jakeuj/Community-Module-Pack">GitHub 原始碼 <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="download-note">Windows · 需要支援中文的 Blish HUD 1.0.0 以上 · 免費開源</p>
+            <dl class="quick-stats" aria-label="已驗證的專案數據">
+              <div><dt><span data-count="203" data-suffix="/203">203/203</span></dt><dd>繁中資源</dd></div>
+              <div><dt><span data-count="104">104</span></dt><dd>官方事件</dd></div>
+              <div><dt><span data-count="13">13</span></dt><dd>世界王獎勵</dd></div>
+              <div><dt><span data-count="5">5</span></dt><dd>Fork 迭代</dd></div>
+            </dl>
           </div>
-          <p class="download-note">下載 Release 中的 <code>Events.Module.bhm</code></p>
-          <dl class="quick-stats" aria-label="翻譯涵蓋範圍">
-            <div><dt>104</dt><dd>官方事件</dd></div>
-            <div><dt>13</dt><dd>世界王獎勵</dd></div>
-            <div><dt>中／英</dt><dd>雙語名稱</dd></div>
-          </dl>
-        </div>
 
-        <figure id="preview" class="product-shot">
-          <img
-            src="./assets/events-module-rewards-bilingual.png"
-            width="1691"
-            height="1212"
-            alt="Blish HUD Events and Metas Observer 繁中版實機畫面，顯示中英文事件名稱、世界王獎勵摘要與每日限制提示"
-            fetchpriority="high">
-          <figcaption>
-            <span><strong>實機畫面</strong> · 世界王獎勵與英文對照</span>
-            <span class="verified-badge">13 隻世界王已查核</span>
-          </figcaption>
-        </figure>
+          <div class="hero-stage reveal" data-reveal-delay="120">
+            <div class="signal-orbit" aria-hidden="true">
+              <span class="orbit-ring ring-one"></span>
+              <span class="orbit-ring ring-two"></span>
+              <span class="signal-node node-a"><img src="./assets/event-icons/day.png" alt=""></span>
+              <span class="signal-node node-b"><img src="./assets/event-icons/night.png" alt=""></span>
+              <span class="signal-node node-c"><img src="./assets/event-icons/invasion-scarlet.png" alt=""></span>
+              <span class="signal-node node-d"><img src="./assets/event-icons/tournament-grenth.png" alt=""></span>
+              <span class="waypoint-pulse pulse-a"></span>
+              <span class="waypoint-pulse pulse-b"></span>
+            </div>
+            <figure id="preview" class="product-shot tilt-card" data-tilt>
+              <div class="shot-bar">
+                <span><i aria-hidden="true"></i>Events and Metas Observer</span>
+                <span>Official Wiki · zh-TW</span>
+              </div>
+              <picture>
+                <source type="image/avif" srcset="./assets/events-rewards-900.avif 900w, ./assets/events-rewards-1400.avif 1400w" sizes="(max-width: 1100px) 92vw, 620px">
+                <source type="image/webp" srcset="./assets/events-rewards-900.webp 900w, ./assets/events-rewards-1400.webp 1400w" sizes="(max-width: 1100px) 92vw, 620px">
+                <img src="./assets/events-module-rewards-bilingual.png" width="1691" height="1212" alt="Blish HUD Events and Metas Observer 繁中版實機畫面，顯示中英文事件名稱與世界王獎勵" fetchpriority="high">
+              </picture>
+              <figcaption>
+                <span><strong>實機畫面</strong> · 雙語名稱與世界王獎勵</span>
+                <span class="verified-badge"><i aria-hidden="true"></i>13 筆已查核</span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+        <a class="scroll-cue" href="#engineering" aria-label="往下查看工程案例"><span>SCROLL</span><i aria-hidden="true"></i></a>
       </section>
 
-      <section id="auto-update" class="update-section" aria-labelledby="update-title">
-        <div class="update-copy">
-          <p class="eyebrow">fork.5 新功能</p>
-          <h2 id="update-title">手動更新這一次，<br>之後穩定版自動跟上。</h2>
-          <p class="update-intro">
-            模組每次載入時會在背景檢查 GitHub 最新穩定版。下載通過 SHA-256 驗證後，會保留模組啟用狀態並重新啟動 Blish HUD；任何檢查、下載或驗證失敗都繼續使用原版本。
-          </p>
-          <ul class="update-points">
-            <li><span aria-hidden="true">01</span><div><strong>預設開啟</strong><p>自動更新可隨時關閉；關閉後仍會通知新版，也能按「立即更新」。</p></div></li>
-            <li><span aria-hidden="true">02</span><div><strong>只跟穩定版</strong><p>測試版、預發行版、格式錯誤、較舊版本與不受信任的下載網址都不會安裝。</p></div></li>
-            <li><span aria-hidden="true">03</span><div><strong>驗證成功才重啟</strong><p>GitHub Release 資產與 SHA-256 必須一致，失敗時不替換檔案也不要求重啟。</p></div></li>
-          </ul>
-          <div class="update-note">
-            <strong>第一次仍需手動安裝 fork.5</strong>
-            <p>舊版尚未內建更新器，請先依下方步驟安裝一次；從 fork.5 開始，後續合規穩定版才會自動更新。</p>
-          </div>
+      <section id="engineering" class="section engineering-section shell" aria-labelledby="engineering-title">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Engineering Case Study</p>
+          <h2 id="engineering-title">不只是翻譯，<br><em>是一條會自我保護的資料管線。</em></h2>
+          <p>每一層都有驗證、失敗策略與可追溯來源。網路或更新失敗時，使用者仍能繼續使用目前版本，而不是被錯誤資料或不完整檔案卡住。</p>
         </div>
 
-        <figure class="update-shot">
-          <img
-            src="./assets/events-module-auto-update-fork5.png"
-            width="1679"
-            height="1228"
-            alt="Blish HUD Events and Metas Observer fork.5 模組設定畫面，顯示自動更新開關、目前版本、已檢查的最新版本、重新檢查與立即更新按鈕"
-            loading="lazy">
-          <figcaption>
-            <strong>fork.5 自動更新設定</strong>
-            <span>目前版本、檢查結果與手動操作集中顯示</span>
-          </figcaption>
-        </figure>
+        <div class="pipeline-panel reveal" data-pipeline>
+          <div class="panel-label"><span>01</span> Event data pipeline</div>
+          <ol class="pipeline data-pipeline" aria-label="活動資料處理流程">
+            <li><span class="pipeline-icon">W</span><div><strong>官方 Wiki</strong><small>Widget v5.2</small></div></li>
+            <li><span class="pipeline-icon">{ }</span><div><strong>Parser 驗證</strong><small>Schema · ID · Waypoint</small></div></li>
+            <li><span class="pipeline-icon">↻</span><div><strong>成功快取</strong><small>原子寫入</small></div></li>
+            <li><span class="pipeline-icon">◇</span><div><strong>內建備援</strong><small>104 筆離線資料</small></div></li>
+            <li><span class="pipeline-icon">繁</span><div><strong>繁中介面</strong><small>中英搜尋與顯示</small></div></li>
+          </ol>
+          <p class="pipeline-note">優先順序：已驗證的官方即時資料 → last-known-good 官方快取 → BHM 內建資料。</p>
+        </div>
+
+        <div class="pipeline-panel release-pipeline-panel reveal" data-pipeline>
+          <div class="panel-label"><span>02</span> Verified release pipeline</div>
+          <ol class="pipeline release-pipeline" aria-label="安全發布與更新流程">
+            <li><span class="pipeline-icon">CI</span><div><strong>自動建置</strong><small>Coverage · Icons · Tests</small></div></li>
+            <li><span class="pipeline-icon">#</span><div><strong>版本契約</strong><small>Tag · Manifest · Asset</small></div></li>
+            <li><span class="pipeline-icon">✓</span><div><strong>SHA-256</strong><small>發布後再次核對</small></div></li>
+            <li><span class="pipeline-icon">↓</span><div><strong>安全更新</strong><small>驗證成功才重新啟動</small></div></li>
+          </ol>
+          <p class="pipeline-note">任何檢查、下載或摘要驗證失敗，都保留原版本運作，不替換檔案也不要求重啟。</p>
+        </div>
+
+        <div class="evidence-grid">
+          <a class="evidence-card spotlight reveal" href="https://github.com/jakeuj/Community-Module-Pack/blob/master/Events%20Module/Properties/Resources.zh.resx">
+            <span>203 / 203</span><strong>台灣繁中資源完整覆蓋</strong><small>查看 Resources.zh.resx ↗</small>
+          </a>
+          <a class="evidence-card spotlight reveal" data-reveal-delay="70" href="https://github.com/jakeuj/Community-Module-Pack/tree/master/Events%20Module/Tests">
+            <span>Parser + Live Audit</span><strong>官方事件、圖示與獎勵測試</strong><small>查看 Tests ↗</small>
+          </a>
+          <a class="evidence-card spotlight reveal" data-reveal-delay="140" href="https://github.com/jakeuj/Community-Module-Pack/blob/master/.github/workflows/events-module-zh-tw.yml">
+            <span>Build → Release</span><strong>自動化封裝與摘要核對</strong><small>查看 GitHub Actions ↗</small>
+          </a>
+          <a class="evidence-card spotlight reveal" data-reveal-delay="210" href="https://github.com/jakeuj/Community-Module-Pack/blob/master/Events%20Module/ModuleUpdateService.cs">
+            <span>Fail-safe updater</span><strong>穩定版與可信下載驗證</strong><small>查看更新器實作 ↗</small>
+          </a>
+        </div>
       </section>
 
-      <section id="features" class="section" aria-labelledby="features-title">
-        <div class="section-heading">
-          <p class="eyebrow">為繁中玩家整理</p>
-          <h2 id="features-title">看得懂時間，也對得上英文攻略</h2>
-          <p>繁中名稱、英文原名與獎勵摘要集中在同一張事件卡片；活動時程仍以官方 Wiki Widget 為準，不需要依賴另一份第三方計時表。</p>
+      <section id="evolution" class="section evolution-section" aria-labelledby="evolution-title">
+        <div class="shell">
+          <div class="section-heading compact reveal">
+            <p class="eyebrow">Fork Evolution · 2026</p>
+            <h2 id="evolution-title">五次迭代，把社群翻譯做成可維護的產品。</h2>
+            <p>每一步都有對應的 Release 與原始碼，不用模糊的「最佳化」包裝成果。</p>
+          </div>
+          <ol class="fork-timeline" aria-label="fork.1 到 fork.5 的版本演進">
+            <li class="timeline-item reveal">
+              <span class="timeline-version">fork.1</span><span class="timeline-dot" aria-hidden="true"></span>
+              <div><p class="timeline-kicker">Foundation</p><h3>繁中術語與發布自動化</h3><p>建立台灣繁中交付流程、fork 版號規則與自動產生後再清理的 Release notes。</p></div>
+            </li>
+            <li class="timeline-item reveal">
+              <span class="timeline-version">fork.2</span><span class="timeline-dot" aria-hidden="true"></span>
+              <div><p class="timeline-kicker">Official Data</p><h3>跟隨官方 Wiki 計時器</h3><p>解析官方 Widget，保留成功快取與內建資料，讓時程、連結和傳送點有清楚權威來源。</p></div>
+            </li>
+            <li class="timeline-item reveal">
+              <span class="timeline-version">fork.3</span><span class="timeline-dot" aria-hidden="true"></span>
+              <div><p class="timeline-kicker">Stable Identity</p><h3>穩定事件 ID 與專屬圖示</h3><p>補齊原先缺少的事件映射，以穩定 ID 保護追蹤設定，並建立 PNG 與封裝驗證。</p></div>
+            </li>
+            <li class="timeline-item reveal">
+              <span class="timeline-version">fork.4</span><span class="timeline-dot" aria-hidden="true"></span>
+              <div><p class="timeline-kicker">Player Context</p><h3>雙語名稱與世界王獎勵</h3><p>繁中下保留官方英文原名，加入 13 隻核心世界王的保底獎勵、每日限制與 Wiki 來源。</p></div>
+            </li>
+            <li class="timeline-item reveal">
+              <span class="timeline-version">fork.5</span><span class="timeline-dot" aria-hidden="true"></span>
+              <div><p class="timeline-kicker">Safe Delivery</p><h3>SHA-256 安全自動更新</h3><p>只接受格式正確的穩定版、可信 GitHub 資產與摘要；成功安裝後才保留設定並重新啟動。</p></div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section player-section shell" aria-labelledby="features-title">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Built for Taiwan Players</p>
+          <h2 id="features-title">看得懂時間，<br>也對得上英文攻略。</h2>
+          <p>畫面保留熟悉的 Blish HUD 操作，只把查資料、比對名稱與判斷獎勵的成本降下來。</p>
         </div>
         <div class="feature-grid">
-          <article>
-            <span class="card-number">01</span>
-            <h3>世界王獎勵資訊</h3>
-            <p>13 隻核心世界王顯示保底稀有／特異裝備與地面寶箱龍晶礦；滑鼠提示說明帳號／角色每日限制、Wiki 來源與查核日期。</p>
-          </article>
-          <article>
-            <span class="card-number">02</span>
-            <h3>繁中＋英文對照</h3>
-            <p>事件卡片以繁中名稱為主、官方英文原名為輔；搜尋同時支援繁中、英文與既有別名，查英文攻略不用來回猜名稱。</p>
-          </article>
-          <article>
-            <span class="card-number">03</span>
-            <h3>官方時程與離線備援</h3>
-            <p>104 個事件的時間、地圖、傳送點與 Wiki 連結跟隨官方資料；連線失敗時依序使用成功快取與內建資料，通知與 11 張專屬圖示仍可使用。</p>
-          </article>
+          <article class="feature-card spotlight reveal"><span>01</span><h3>繁中＋官方英文</h3><p>卡片以繁中為主、英文原名為輔；搜尋同時支援繁中、英文與既有別名。</p></article>
+          <article class="feature-card spotlight reveal" data-reveal-delay="80"><span>02</span><h3>世界王獎勵資訊</h3><p>13 隻核心世界王顯示保底裝備、龍晶礦，以及帳號／角色每日限制。</p></article>
+          <article class="feature-card spotlight reveal" data-reveal-delay="160"><span>03</span><h3>官方時程與離線備援</h3><p>官方資料成功才更新；無法連線時依序使用成功快取與內建資料。</p></article>
         </div>
       </section>
 
-      <section id="install" class="install-section" aria-labelledby="install-title">
-        <div class="section-heading compact">
-          <p class="eyebrow">fork.5 首次安裝 · 四步完成</p>
-          <h2 id="install-title">安裝方式</h2>
+      <section class="section update-section shell" aria-labelledby="update-title">
+        <div class="update-copy reveal">
+          <p class="eyebrow">fork.5 · Verified Update</p>
+          <h2 id="update-title">手動更新這一次，<br><em>之後穩定版安全跟上。</em></h2>
+          <p>每次載入在背景檢查最新穩定版。Release tag、資產名稱、可信網址與 SHA-256 全部通過後才會安裝；任何失敗都繼續使用原版本。</p>
+          <ul class="check-list">
+            <li><span aria-hidden="true">✓</span><div><strong>預設開啟，也能隨時關閉</strong><p>關閉後仍會通知新版，只有按「立即更新」才安裝。</p></div></li>
+            <li><span aria-hidden="true">✓</span><div><strong>只跟隨正式穩定版</strong><p>測試版、預發行版、格式錯誤與降版都會拒絕。</p></div></li>
+            <li><span aria-hidden="true">✓</span><div><strong>驗證成功才重新啟動</strong><p>保留模組啟用狀態，下載或驗證失敗時不動目前檔案。</p></div></li>
+          </ul>
+          <div class="notice"><strong>第一次仍需手動安裝 fork.5</strong><p>更舊版本尚未內建更新器；安裝含更新器的版本後，後續合規穩定版才會自動跟上。</p></div>
         </div>
-        <ol class="steps">
-          <li><span>1</span><div><strong>關閉 Blish HUD</strong><p>替換或新增模組前，先完全結束 Blish HUD。</p></div></li>
-          <li><span>2</span><div><strong>下載 BHM</strong><p>從最新 Release 下載 <code>Events.Module.bhm</code>。</p></div></li>
-          <li><span>3</span><div><strong>放進 Modules</strong><p>將檔案放到 <code>Documents\Guild Wars 2\addons\blishhud\Modules</code>。</p></div></li>
-          <li><span>4</span><div><strong>重新啟動並啟用</strong><p>在模組設定中啟用；「自動更新此模組」預設開啟。</p></div></li>
-        </ol>
-        <p class="official-guide">若文件資料夾由 OneDrive 同步，實際路徑可能位於 OneDrive。可參考 <a href="https://blishhud.com/docs/user/guides/installing-modules/">Blish HUD 官方模組安裝說明</a>。</p>
+        <figure class="update-shot tilt-card reveal" data-tilt data-reveal-delay="120">
+          <picture>
+            <source type="image/avif" srcset="./assets/events-update-900.avif 900w, ./assets/events-update-1400.avif 1400w" sizes="(max-width: 980px) 92vw, 580px">
+            <source type="image/webp" srcset="./assets/events-update-900.webp 900w, ./assets/events-update-1400.webp 1400w" sizes="(max-width: 980px) 92vw, 580px">
+            <img src="./assets/events-module-auto-update-fork5.png" width="1679" height="1228" alt="Events and Metas Observer fork.5 模組設定，顯示自動更新、目前版本與檢查結果" loading="lazy">
+          </picture>
+          <figcaption><strong>fork.5 自動更新設定</strong><span>目前版本、檢查結果與手動操作集中顯示</span></figcaption>
+        </figure>
       </section>
 
-      <section id="more-tools" class="companion" aria-labelledby="companion-title">
-        <div class="companion-copy">
-          <p class="eyebrow">更多 GW2 繁中工具</p>
-          <h2 id="companion-title">還想讓遊戲介面也變成繁體中文？</h2>
-          <p>
-            Events and Metas Observer 負責 Blish HUD 的活動時程；若你也需要 Guild Wars 2 遊戲 UI 繁中化，可以搭配 <strong>GW2 ArcDPS 繁體中文 UI</strong>。兩者用途不同，可同時使用。
-          </p>
-          <div class="actions">
-            <a class="button primary" href="https://gw2.jakeuj.com/">前往繁中 UI 網站 <span aria-hidden="true">↗</span></a>
-            <a class="button secondary" href="https://github.com/jakeuj/GW2-ArcDPS-TChineseUI">查看插件 GitHub</a>
+      <section id="install" class="section install-section" aria-labelledby="install-title">
+        <div class="shell">
+          <div class="section-heading compact reveal">
+            <p class="eyebrow">First Install · Four Steps</p>
+            <h2 id="install-title">第一次安裝，四步完成。</h2>
+          </div>
+          <ol class="steps">
+            <li class="reveal"><span>1</span><div><strong>安裝中文 Blish HUD</strong><p>使用支援中文且版本 1.0.0 以上的 Blish HUD。</p></div></li>
+            <li class="reveal" data-reveal-delay="70"><span>2</span><div><strong>下載 BHM</strong><p>從最新 Release 取得 <code>Events.Module.bhm</code>。</p></div></li>
+            <li class="reveal" data-reveal-delay="140"><span>3</span><div><strong>放進 Modules</strong><p>完全關閉 Blish HUD 後，將檔案放入模組資料夾。</p></div></li>
+            <li class="reveal" data-reveal-delay="210"><span>4</span><div><strong>重新啟動並啟用</strong><p>啟用 Events and Metas Observer；自動更新預設開啟。</p></div></li>
+          </ol>
+          <div class="install-help reveal">
+            <p><strong>模組路徑</strong><code>Documents\Guild Wars 2\addons\blishhud\Modules</code></p>
+            <a href="https://blishhud.com/docs/user/guides/installing-modules/">Blish HUD 官方安裝說明 <span aria-hidden="true">↗</span></a>
           </div>
         </div>
-        <div class="companion-card" aria-label="GW2 ArcDPS 繁體中文 UI 插件介紹">
-          <div class="plugin-badge">ArcDPS Plugin</div>
-          <div class="t-mark" aria-hidden="true">繁</div>
-          <h3>GW2 ArcDPS<br>繁體中文 UI</h3>
-          <p>遊戲介面繁中轉換 · 設定保存 · 自動化 Release</p>
+      </section>
+
+      <section id="tools" class="section tools-section shell" aria-labelledby="tools-title">
+        <div class="section-heading reveal">
+          <p class="eyebrow">jakeuj · GW2 Tool Suite</p>
+          <h2 id="tools-title">從活動情報到裝備價值，<br><em>橫跨三種 GW2 擴充生態。</em></h2>
+          <p>Blish HUD、Nexus 與 ArcDPS 各自處理不同問題，但都以繁中玩家看得懂、能驗證、可安全更新為目標。</p>
+        </div>
+        <div class="tools-grid">
+          <article class="tool-card events-tool spotlight reveal">
+            <div class="tool-visual">
+              <picture>
+                <source type="image/avif" srcset="./assets/events-rewards-900.avif">
+                <source type="image/webp" srcset="./assets/events-rewards-900.webp">
+                <img src="./assets/events-module-rewards-bilingual.png" width="1691" height="1212" alt="Events and Metas Observer 繁中版畫面" loading="lazy">
+              </picture>
+              <span class="tool-type">Blish HUD Module</span>
+            </div>
+            <div class="tool-body"><p class="tool-index">01 · CURRENT</p><h3>Events and Metas Observer</h3><p>官方活動時程、雙語名稱、世界王獎勵、通知與安全更新。</p><a href="#top">回到本頁介紹 <span aria-hidden="true">↑</span></a></div>
+          </article>
+
+          <article class="tool-card value-tool spotlight reveal" data-reveal-delay="90">
+            <div class="tool-visual">
+              <picture>
+                <source type="image/avif" srcset="./assets/upgrade-value-640.avif 640w, ./assets/upgrade-value-960.avif 960w" sizes="(max-width: 760px) 92vw, 390px">
+                <source type="image/webp" srcset="./assets/upgrade-value-640.webp 640w, ./assets/upgrade-value-960.webp 960w" sizes="(max-width: 760px) 92vw, 390px">
+                <img src="./assets/upgrade-value-960.webp" width="960" height="564" alt="Upgrade Value Nexus 插件畫面，列出裝備內嵌升級與交易所價格" loading="lazy">
+              </picture>
+              <span class="tool-type">Nexus Addon</span>
+            </div>
+            <div class="tool-body"><p class="tool-index">02 · UPGRADE VALUE</p><h3>先看價值，再決定怎麼拆。</h3><p>掃描橘色裝備內嵌符文與印記，取得即時交易所價格，協助判斷是否值得使用黑獅分解工具。</p><a href="https://gw2-value.jakeuj.com/">前往 Upgrade Value <span aria-hidden="true">↗</span></a></div>
+          </article>
+
+          <article class="tool-card arcdps-tool spotlight reveal" data-reveal-delay="180">
+            <div class="tool-visual tool-glyph" aria-hidden="true"><span>繁</span><i></i><b>Traditional Chinese UI</b></div>
+            <span class="tool-type">ArcDPS Plugin</span>
+            <div class="tool-body"><p class="tool-index">03 · TAIWAN ZH</p><h3>GW2 ArcDPS 繁體中文 UI</h3><p>讓遊戲介面也能使用台灣繁體中文，搭配設定保存與自動化 Release。</p><a href="https://gw2.jakeuj.com/">前往繁中 UI 網站 <span aria-hidden="true">↗</span></a></div>
+          </article>
         </div>
       </section>
 
-      <section class="release-strip" aria-label="下載最新版">
-        <div>
-          <span class="release-dot" aria-hidden="true"></span>
-          <p><strong>v1.0.9-fork.5 已發布</strong><br>這是第一個含更新器的版本；手動安裝一次後，後續穩定版即可自動更新。</p>
-        </div>
-        <a class="button primary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm">取得最新版</a>
+      <section class="release-cta shell reveal" aria-labelledby="download-title">
+        <div class="release-sigil" aria-hidden="true"><span></span></div>
+        <div><p class="eyebrow">Stable Release</p><h2 id="download-title"><span data-release-version>v1.0.9-fork.5</span> 已發布</h2><p>這是第一個含安全更新器的版本；手動安裝一次後，後續穩定版即可自動跟上。</p></div>
+        <div class="release-actions"><a class="button primary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.Module.bhm">下載 Events.Module.bhm</a><a class="button secondary" href="https://github.com/jakeuj/Community-Module-Pack/releases/latest">查看版本資訊</a></div>
       </section>
     </main>
 
-    <footer>
-      <p>社群繁體中文版本，非 ArenaNet 或 Blish HUD 官方發行。</p>
-      <div>
-        <a href="https://github.com/jakeuj/Community-Module-Pack">GitHub</a>
-        <a href="https://github.com/jakeuj/Community-Module-Pack/releases">Releases</a>
-        <a href="https://gw2.jakeuj.com/">ArcDPS 繁中 UI</a>
-      </div>
+    <footer class="site-footer shell">
+      <div><a class="footer-brand" href="https://github.com/jakeuj">jakeuj · GW2 Tools</a><p>由玩家為繁中社群製作。非 ArenaNet、Blish HUD、Raidcore 或 ArcDPS 官方發行。</p></div>
+      <nav aria-label="頁尾連結"><a href="https://github.com/jakeuj/Community-Module-Pack">GitHub</a><a href="https://github.com/jakeuj/Community-Module-Pack/releases">Releases</a><a href="https://gw2-value.jakeuj.com/">Upgrade Value</a><a href="https://gw2.jakeuj.com/">ArcDPS 繁中 UI</a></nav>
     </footer>
   </body>
 </html>
