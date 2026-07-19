@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Events_Module {
@@ -19,6 +20,7 @@ namespace Events_Module {
         public string CategoryZh { get; set; }
         public string CategoryEn { get; set; }
         public string Time       { get; set; }
+        public string Reward     { get; set; }
 
     }
 
@@ -70,6 +72,17 @@ namespace Events_Module {
     }
 
     internal static class EventChatMessageFormatter {
+
+        private const string LegacyEnglishDefault =
+            "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?";
+        private const string LegacyChineseDefault =
+            "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？";
+        private const string PreviousEnglishDefault =
+            "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join? {reward}";
+        private const string PreviousChineseDefault =
+            "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？ {reward}";
+        private const string PreviousDoubleSpaceDefault =
+            "{point} 【{category_zh}】 {event} {time}  {reward}";
 
         internal static EventClipboardTextResult BuildClipboardText(bool useCustomFormat,
                                                                     string format,
@@ -144,7 +157,52 @@ namespace Events_Module {
                 return EventChatMessageFormatResult.Failed(EventChatMessageFormatFailure.MissingPoint);
             }
 
-            return EventChatMessageFormatResult.Success(output.ToString());
+            return EventChatMessageFormatResult.Success(output.ToString().Trim());
+        }
+
+        internal static bool ContainsField(string format, string field) {
+            if (string.IsNullOrEmpty(format) || string.IsNullOrEmpty(field)) return false;
+
+            for (int index = 0; index < format.Length;) {
+                if (format[index] != '{') {
+                    index++;
+                    continue;
+                }
+
+                if (index + 1 < format.Length && format[index + 1] == '{') {
+                    index += 2;
+                    continue;
+                }
+
+                int closingBrace = format.IndexOf('}', index + 1);
+                if (closingBrace < 0 || format.IndexOf('{', index + 1, closingBrace - index - 1) >= 0) {
+                    return false;
+                }
+
+                if (string.Equals(
+                    format.Substring(index + 1, closingBrace - index - 1),
+                    field,
+                    StringComparison.Ordinal
+                )) {
+                    return true;
+                }
+
+                index = closingBrace + 1;
+            }
+
+            return false;
+        }
+
+        internal static string MigrateLegacyDefaultFormat(string format, string currentDefault) {
+            if (string.Equals(format, LegacyEnglishDefault, StringComparison.Ordinal) ||
+                string.Equals(format, LegacyChineseDefault, StringComparison.Ordinal) ||
+                string.Equals(format, PreviousEnglishDefault, StringComparison.Ordinal) ||
+                string.Equals(format, PreviousChineseDefault, StringComparison.Ordinal) ||
+                string.Equals(format, PreviousDoubleSpaceDefault, StringComparison.Ordinal)) {
+                return currentDefault ?? string.Empty;
+            }
+
+            return format ?? string.Empty;
         }
 
         internal static string CombineBilingual(string localized, string english) {
@@ -186,10 +244,39 @@ namespace Events_Module {
                 case "time":
                     value = values.Time ?? string.Empty;
                     return true;
+                case "reward":
+                    value = values.Reward ?? string.Empty;
+                    return true;
                 default:
                     value = string.Empty;
                     return false;
             }
+        }
+
+    }
+
+    internal static class EventChatMessagePreviewSelector {
+
+        internal static T Select<T>(IEnumerable<T> orderedCandidates,
+                                    string format,
+                                    Func<T, bool> hasReward) {
+            if (orderedCandidates == null) return default(T);
+
+            bool preferReward = hasReward != null && EventChatMessageFormatter.ContainsField(format, "reward");
+            bool hasFallback = false;
+            T fallback = default(T);
+
+            foreach (T candidate in orderedCandidates) {
+                if (!hasFallback) {
+                    fallback = candidate;
+                    hasFallback = true;
+                }
+
+                if (!preferReward) return candidate;
+                if (preferReward && hasReward(candidate)) return candidate;
+            }
+
+            return fallback;
         }
 
     }

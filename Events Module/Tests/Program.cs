@@ -99,30 +99,54 @@ namespace Events_Module {
         }
 
         private static void RunEventChatMessageFormatterTests() {
+            const string currentDefault =
+                "{point} 【{category_zh}】 {event} {time} {reward}";
             var values = new EventChatMessageValues {
                 Point = "[&BEwCAAA=]",
                 EventZh = "吞噬托",
                 EventEn = "Tequatl the Sunless",
                 CategoryZh = "世界王",
                 CategoryEn = "World Bosses",
-                Time = "下午 07:30"
+                Time = "下午 07:30",
+                Reward = "保底：稀有/特異≥1、龍晶礦15–25"
             };
 
             EventChatMessageFormatResult complete = EventChatMessageFormatter.Format(
-                "{point}|{event}|{event_zh}|{event_en}|{category}|{category_zh}|{category_en}|{time}|{{literal}}",
+                "{point}|{event}|{event_zh}|{event_en}|{category}|{category_zh}|{category_en}|{time}|{reward}|{{literal}}",
                 values
             );
             Assert(complete.IsValid, "A format containing all supported fields should be valid.");
-            Assert(complete.Text == "[&BEwCAAA=]|吞噬托 / Tequatl the Sunless|吞噬托|Tequatl the Sunless|世界王 / World Bosses|世界王|World Bosses|下午 07:30|{literal}",
+            Assert(complete.Text == "[&BEwCAAA=]|吞噬托 / Tequatl the Sunless|吞噬托|Tequatl the Sunless|世界王 / World Bosses|世界王|World Bosses|下午 07:30|保底：稀有/特異≥1、龍晶礦15–25|{literal}",
                    "Supported chat message fields or escaped braces were formatted incorrectly.");
 
             EventChatMessageFormatResult freeText = EventChatMessageFormatter.Format(
-                "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？",
+                "  {point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？ {reward}  ",
                 values
             );
             Assert(freeText.IsValid &&
-                   freeText.Text == "[&BEwCAAA=] 【世界王】 吞噬托 / Tequatl the Sunless，下午 07:30 開打，有人要一起嗎？",
-                   "Free text and punctuation should be preserved around formatted fields.");
+                   freeText.Text == "[&BEwCAAA=] 【世界王】 吞噬托 / Tequatl the Sunless，下午 07:30 開打，有人要一起嗎？ 保底：稀有/特異≥1、龍晶礦15–25",
+                   "Free text and punctuation should be preserved while outer whitespace is trimmed.");
+
+            EventChatMessageFormatResult currentDefaultWithReward = EventChatMessageFormatter.Format(
+                currentDefault,
+                values
+            );
+            Assert(currentDefaultWithReward.IsValid &&
+                   currentDefaultWithReward.Text == "[&BEwCAAA=] 【世界王】 吞噬托 / Tequatl the Sunless 下午 07:30 保底：稀有/特異≥1、龍晶礦15–25",
+                   "The current default should preserve one space between time and reward.");
+
+            string rewardSummary = values.Reward;
+            values.Reward = string.Empty;
+            EventClipboardTextResult noReward = EventChatMessageFormatter.BuildClipboardText(
+                true,
+                "  " + currentDefault + "  ",
+                values
+            );
+            Assert(noReward.Text ==
+                   "[&BEwCAAA=] 【世界王】 吞噬托 / Tequatl the Sunless 下午 07:30" &&
+                   noReward.UsedCustomFormat && !noReward.FellBackToPoint,
+                   "The default format should omit an unlisted reward without leaving outer whitespace or falling back.");
+            values.Reward = rewardSummary;
 
             EventClipboardTextResult disabled = EventChatMessageFormatter.BuildClipboardText(
                 false,
@@ -158,6 +182,54 @@ namespace Events_Module {
             );
             Assert(deduplicated.IsValid && deduplicated.Text == "[&BEwCAAA=] 吞噬托 世界王",
                    "Smart bilingual fields should not duplicate identical localized and English values.");
+
+            Assert(EventChatMessageFormatter.ContainsField("{point} {reward}", "reward"),
+                   "An unescaped reward field should be detected.");
+            Assert(!EventChatMessageFormatter.ContainsField("{point} {{reward}}", "reward"),
+                   "An escaped literal reward field should not affect preview selection.");
+            Assert(!EventChatMessageFormatter.ContainsField("{point} {Reward}", "reward"),
+                   "Chat message field detection should remain case-sensitive.");
+
+            string preferredPreview = EventChatMessagePreviewSelector.Select(
+                new[] { "next-event", "rewarded-event" },
+                "{point} {reward}",
+                candidate => candidate == "rewarded-event"
+            );
+            Assert(preferredPreview == "rewarded-event",
+                   "A reward format should preview the next candidate with verified reward data.");
+            Assert(EventChatMessagePreviewSelector.Select(
+                new[] { "next-event", "rewarded-event" },
+                "{point} {{reward}}",
+                candidate => candidate == "rewarded-event"
+            ) == "next-event", "An escaped reward literal should keep the normal next-event preview.");
+            Assert(EventChatMessagePreviewSelector.Select(
+                new[] { "next-event", "later-event" },
+                "{point} {reward}",
+                candidate => false
+            ) == "next-event", "Reward preview selection should fall back when no candidate has reward data.");
+
+            const string oldEnglishDefault =
+                "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?";
+            const string oldChineseDefault =
+                "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？";
+            const string previousEnglishDefault =
+                "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join? {reward}";
+            const string previousChineseDefault =
+                "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？ {reward}";
+            const string previousDoubleSpaceDefault =
+                "{point} 【{category_zh}】 {event} {time}  {reward}";
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat(oldEnglishDefault, currentDefault) == currentDefault,
+                   "The legacy neutral default should migrate to the current localized default.");
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat(oldChineseDefault, currentDefault) == currentDefault,
+                   "The legacy Chinese default should migrate to the current localized default.");
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat(previousEnglishDefault, currentDefault) == currentDefault,
+                   "The previous neutral reward default should migrate to the current localized default.");
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat(previousChineseDefault, currentDefault) == currentDefault,
+                   "The previous Chinese reward default should migrate to the current localized default.");
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat(previousDoubleSpaceDefault, currentDefault) == currentDefault,
+                   "The previous double-space default should migrate to the current localized default.");
+            Assert(EventChatMessageFormatter.MigrateLegacyDefaultFormat("{point} my custom text", currentDefault) ==
+                   "{point} my custom text", "User-edited chat formats must not be migrated.");
 
             AssertFormatFailure(null, EventChatMessageFormatFailure.EmptyFormat,
                                 "An empty chat message format must be rejected.");
@@ -309,30 +381,292 @@ namespace Events_Module {
         private static void RunRewardCatalogTests() {
             string catalogJson = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "event-rewards.json"));
             EventRewardCatalog catalog = EventRewardCatalog.Parse(catalogJson);
+            JObject catalogDocument = JObject.Parse(catalogJson);
 
-            Assert(catalog.Count == 13, "The reward catalog should contain the 13 core world bosses.");
+            Assert((int)catalogDocument["version"] == 3, "The reward catalog should use schema v3.");
+            Assert(catalog.Count == 17, "The reward catalog should contain 13 core world bosses and 4 fixed-coin events.");
 
-            EventRewardSummary golem = catalog.Match("[&BNQCAAA=]", "Renamed Golem");
-            Assert(golem?.Id == "world-boss:golem-mark-ii", "Waypoint matching should identify Golem Mark II.");
+            EventRewardSummary golem = catalog.Match(null, "[&BNQCAAA=]", true, "Golem Mark II");
+            Assert(golem?.Id == "world-boss:golem-mark-ii", "A unique waypoint and matching alias should identify Golem Mark II.");
             Assert(golem.DragoniteAmount == "15–25", "Golem Mark II should show its verified Dragonite Ore range.");
+            Assert(golem.MinimumRareOrExoticItems == 1 &&
+                   golem.RareOrExoticLimit == EventRewardLimit.AccountDaily &&
+                   golem.DragoniteLimit == EventRewardLimit.CharacterDaily,
+                   "World-boss rare gear and Dragonite limits should remain independent and explicit.");
 
-            EventRewardSummary megadestroyer = catalog.Match(null, "Megadestroyer");
+            EventRewardSummary megadestroyer = catalog.Match(null, null, false, "Megadestroyer");
             Assert(megadestroyer?.DragoniteAmount == "3–5", "English-name fallback should match Megadestroyer.");
 
-            EventRewardSummary greatWurm = catalog.Match("[&BEEFAAA=]", "Jungle Wurm");
-            EventRewardSummary evolvedWurm = catalog.Match("[&BKoBAAA=]", "Jungle Wurm");
+            EventRewardSummary greatWurm = catalog.Match(null, "[&BEEFAAA=]", true, "Jungle Wurm");
+            EventRewardSummary evolvedWurm = catalog.Match(null, "[&BKoBAAA=]", true, "Triple Trouble");
             Assert(greatWurm?.Id == "world-boss:great-jungle-wurm", "The Great Jungle Wurm waypoint should stay distinct.");
             Assert(evolvedWurm?.Id == "world-boss:evolved-jungle-wurm", "The Evolved Jungle Wurm waypoint should stay distinct.");
-            Assert(catalog.Match("[&AAAAAAA=]", "Unknown Event") == null, "Unlisted events must not receive reward claims.");
+            Assert(evolvedWurm?.CompactDragoniteAmount == "1–15+",
+                   "The compact Evolved Jungle Wurm amount should retain its special marker for chat summaries.");
+            EventRewardSummary claw = catalog.Match(null, "[&BHoCAAA=]", true, "Claw of Jormag");
+            Assert(claw?.CompactDragoniteAmount == "15–24*",
+                   "The compact Claw of Jormag amount should retain its special marker for chat summaries.");
+            Assert(catalog.Match(null, "[&AAAAAAA=]", true, "Unknown Event") == null,
+                   "Unlisted events must not receive reward claims.");
+
+            EventRewardSummary dragonstorm = catalog.Match(
+                "wiki:public-eotn:3",
+                "[&BAkMAAA=]",
+                false,
+                "Wrong shared-waypoint name"
+            );
+            EventRewardSummary twistedMarionette = catalog.Match(
+                "wiki:public-eotn:1",
+                "[&BAkMAAA=]",
+                false,
+                "Wrong shared-waypoint name"
+            );
+            Assert(dragonstorm?.Id == "public-instance:dragonstorm" &&
+                   twistedMarionette?.Id == "public-instance:twisted-marionette",
+                   "Stable IDs must distinguish Dragonstorm and the Twisted Marionette at their shared waypoint.");
+            Assert(dragonstorm.MinimumRareOrExoticItems == 2 &&
+                   dragonstorm.RareOrExoticLimit == EventRewardLimit.AccountDaily &&
+                   dragonstorm.GuaranteedCoinCopper == 20000 &&
+                   dragonstorm.CoinLimit == EventRewardLimit.AccountDaily &&
+                   dragonstorm.VerifiedOn == new DateTime(2026, 7, 19),
+                   "Dragonstorm should expose its verified account-daily rare gear and 2G rewards.");
+            Assert(twistedMarionette.MinimumRareOrExoticItems == 2 &&
+                   twistedMarionette.RareOrExoticLimit == EventRewardLimit.AccountDaily &&
+                   twistedMarionette.DragoniteAmount == "15" &&
+                   twistedMarionette.DragoniteLimit == EventRewardLimit.CharacterDaily &&
+                   twistedMarionette.Sources.Count == 3,
+                   "The Twisted Marionette should expose independent rare, Dragonite, and multi-source data.");
+            Assert(golem.VerifiedOn == new DateTime(2026, 7, 18),
+                   "Existing world-boss entries should retain their original catalog verification date.");
+            Assert(catalog.Match("local:Meta Event:Dragonstorm (Public)", "[&BAkMAAA=]", false, "Dragonstorm (Public)")?.Id ==
+                   "public-instance:dragonstorm",
+                   "Bundled fallback data should match Dragonstorm by its normalized English alias.");
+            Assert(catalog.Match(null, "[&BAkMAAA=]", false, "Unknown Event") == null,
+                   "A shared public-instance waypoint must not infer a reward without a stable ID or known alias.");
+
+            EventRewardSummary mountBalrior = catalog.Match(
+                "wiki:public-con:1",
+                "[&BK4OAAA=]",
+                true,
+                "Mount Balrior"
+            );
+            EventRewardSummary outerNayos = catalog.Match(
+                "wiki:public-con:2",
+                "[&BB8OAAA=]",
+                false,
+                "Outer Nayos"
+            );
+            Assert(mountBalrior?.MinimumRareOrExoticItems == 3 &&
+                   mountBalrior.RareOrExoticLimit == EventRewardLimit.AccountDaily &&
+                   mountBalrior.GuaranteedCoinCopper == 20000 &&
+                   outerNayos?.GuaranteedCoinCopper == 20000,
+                   "The Convergences should expose only their verified daily-scope reward components.");
+            Assert(outerNayos.MinimumRareOrExoticItems == null &&
+                   string.IsNullOrWhiteSpace(outerNayos.DragoniteAmount),
+                   "Outer Nayos daily scope should remain fixed-coin only.");
+            Assert(catalog.Match("local:Public Instances:Outer Nayos", "[&BB8OAAA=]", false, "Outer Nayos")?.Id ==
+                   "public-instance:convergence-outer-nayos",
+                   "Bundled Outer Nayos should match by its verified English alias.");
+
+            var falsePositiveEvents = new Dictionary<string, string>(StringComparer.Ordinal) {
+                ["wiki:soto-wt:1"] = "Target Practice",
+                ["wiki:soto-wt:2"] = "Fly by Night",
+                ["wiki:soto-wt:3"] = "Target Practice & Fly by Night"
+            };
+            foreach (var falsePositive in falsePositiveEvents) {
+                Assert(catalog.Match(falsePositive.Key, "[&BB8OAAA=]", false, falsePositive.Value) == null,
+                       falsePositive.Key + " must not inherit the Outer Nayos reward through a shared waypoint.");
+            }
+            Assert(catalog.Match("local:Adventure:Target Practice", "[&BB8OAAA=]", false, "Target Practice") == null &&
+                   catalog.Match("local:Adventure:Fly by Night", "[&BB8OAAA=]", false, "Fly by Night") == null,
+                   "Bundled Wizard's Tower adventures must not inherit the Outer Nayos reward.");
+            Assert(catalog.Match(null, "[&BK4OAAA=]", true, "Wrong event name") == null,
+                   "Even a globally unique waypoint must have a compatible verified alias.");
+
+            Assert(EventRewardTextFormatter.FormatCoin(20000) == "2G" &&
+                   EventRewardTextFormatter.FormatCoin(20105) == "2G 1S 5C",
+                   "Coin formatting must use exact integer copper conversion.");
+            Assert(BuildChineseCompactReward(golem) == "保底：稀有/特異≥1、龍晶礦15–25",
+                   "Existing world-boss compact reward text must remain unchanged.");
+            Assert(BuildChineseCompactReward(dragonstorm) == "保底：稀有/特異≥2、2G（帳號每日）",
+                   "Dragonstorm should include its account-daily rare gear and fixed coin.");
+            Assert(BuildChineseCompactReward(twistedMarionette) ==
+                   "保底：稀有/特異≥2、龍晶礦15、2G（帳號每日）",
+                   "The Twisted Marionette should include all three daily guarantee components.");
+            Assert(BuildChineseCompactReward(mountBalrior) == "保底：稀有/特異≥3、2G（帳號每日）",
+                   "Mount Balrior should include its account-daily rare gear and fixed coin.");
+            Assert(BuildChineseCompactReward(outerNayos) == "保底：2G（帳號每日）",
+                   "Outer Nayos should remain fixed-coin only under the daily guarantee scope.");
+            Assert(BuildEnglishCompactReward(dragonstorm) ==
+                   "Guaranteed: rare/exotic ≥2, 2G (daily per account)" &&
+                   BuildEnglishCompactReward(twistedMarionette) ==
+                   "Guaranteed: rare/exotic ≥2, Dragonite 15, 2G (daily per account)" &&
+                   BuildEnglishCompactReward(mountBalrior) ==
+                   "Guaranteed: rare/exotic ≥3, 2G (daily per account)" &&
+                   BuildEnglishCompactReward(outerNayos) ==
+                   "Guaranteed: 2G (daily per account)",
+                   "All four fixed-coin events should have stable neutral compact summaries.");
+            Assert(BuildChineseCompactReward(null) == string.Empty,
+                   "Unlisted events should continue to produce an empty compact reward summary.");
+
+            string twistedDetails = EventRewardTextFormatter.BuildDetailedSummary(
+                twistedMarionette,
+                CreateChineseRewardDetailFormats()
+            );
+            string newline = Environment.NewLine;
+            Assert(twistedDetails ==
+                   "事件獎勵資訊" + newline +
+                   "保底稀有或特異裝備：至少 2 件" + newline +
+                   "額外獎勵寶箱：每帳號每日一次。" + newline + newline +
+                   "地面寶箱保底龍晶礦：15" + newline +
+                   "地面寶箱：每角色每日一次。" + newline + newline +
+                   "保證金幣：2G" + newline +
+                   "金幣獎勵：每帳號每日一次。" + newline + newline +
+                   "資料來源：Guild Wars 2 Wiki — The Twisted Marionette、Hoard of the Marionette Warden V、Marionette Chest" + newline +
+                   "查核日期：2026-07-19",
+                   "The detailed tooltip should preserve component limits, all Wiki sources, and the verification date. Actual: " +
+                   twistedDetails.Replace("\r", "\\r").Replace("\n", "\\n"));
 
             AssertRewardCatalogThrows(
                 catalogJson.Replace("\"world-boss:taidha-covington\"", "\"world-boss:megadestroyer\""),
                 "Duplicate reward event IDs must be rejected."
             );
-            AssertRewardCatalogThrows(
-                catalogJson.Replace("2026-07-18", DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd")),
-                "Reward verification dates beyond the worldwide time-zone boundary must be rejected."
+
+            JObject invalidCatalog = JObject.Parse(catalogJson);
+            JArray invalidEvents = (JArray)invalidCatalog["events"];
+            JObject invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["stableIds"] = new JArray("wiki:public-con:1");
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Duplicate reward stable IDs must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["names"] = new JArray("Outer Nayos");
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Duplicate normalized reward aliases must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["minimumRareOrExoticItems"] = 0;
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Zero guaranteed rare or exotic count must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm.Property("rareOrExoticLimit").Remove();
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "A reward component without its limit must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            JObject invalidOuterNayos = FindRewardEvent(invalidEvents, "public-instance:convergence-outer-nayos");
+            invalidOuterNayos["dragoniteLimit"] = "character-daily";
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "A limit without its reward component must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["guaranteedCoinCopper"] = 0;
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Zero guaranteed coin must be rejected.");
+            invalidDragonstorm["guaranteedCoinCopper"] = -1;
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Negative guaranteed coin must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["coinLimit"] = "weekly";
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Unsupported guaranteed coin limits must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidOuterNayos = FindRewardEvent(invalidEvents, "public-instance:convergence-outer-nayos");
+            invalidOuterNayos.Property("guaranteedCoinCopper").Remove();
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "A coin limit without a coin amount must be rejected.");
+            invalidOuterNayos.Property("coinLimit").Remove();
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Entries without supported reward components must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["sources"] = new JArray();
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Reward entries without official sources must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            ((JObject)((JArray)invalidDragonstorm["sources"])[0])["url"] = "https://example.com/not-the-wiki";
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Non-Wiki reward sources must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            JObject invalidMarionette = FindRewardEvent(invalidEvents, "public-instance:twisted-marionette");
+            JArray marionetteSources = (JArray)invalidMarionette["sources"];
+            marionetteSources.Add(marionetteSources[0].DeepClone());
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Duplicate reward sources must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm.Property("minimumRareOrExoticItems").Remove();
+            invalidDragonstorm.Property("rareOrExoticLimit").Remove();
+            invalidDragonstorm.Property("guaranteedCoinCopper").Remove();
+            invalidDragonstorm.Property("coinLimit").Remove();
+            AssertRewardCatalogThrows(invalidCatalog.ToString(), "Entries without supported reward components must be rejected.");
+
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidCatalog["verifiedOn"] = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd");
+            AssertRewardCatalogThrows(invalidCatalog.ToString(),
+                                      "Catalog verification dates beyond the worldwide time-zone boundary must be rejected.");
+            invalidCatalog = JObject.Parse(catalogJson);
+            invalidEvents = (JArray)invalidCatalog["events"];
+            invalidDragonstorm = FindRewardEvent(invalidEvents, "public-instance:dragonstorm");
+            invalidDragonstorm["verifiedOn"] = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd");
+            AssertRewardCatalogThrows(invalidCatalog.ToString(),
+                                      "Per-event verification dates beyond the worldwide time-zone boundary must be rejected.");
+        }
+
+        private static string BuildChineseCompactReward(EventRewardSummary reward) {
+            return EventRewardTextFormatter.BuildCompactSummary(
+                reward,
+                "保底：",
+                "、",
+                "稀有/特異≥{0}",
+                "龍晶礦{0}",
+                "{0}（帳號每日）"
             );
+        }
+
+        private static string BuildEnglishCompactReward(EventRewardSummary reward) {
+            return EventRewardTextFormatter.BuildCompactSummary(
+                reward,
+                "Guaranteed: ",
+                ", ",
+                "rare/exotic ≥{0}",
+                "Dragonite {0}",
+                "{0} (daily per account)"
+            );
+        }
+
+        private static EventRewardDetailFormats CreateChineseRewardDetailFormats() {
+            return new EventRewardDetailFormats {
+                Title = "事件獎勵資訊",
+                RareOrExoticFormat = "保底稀有或特異裝備：至少 {0} 件",
+                RareAccountDailyLimit = "額外獎勵寶箱：每帳號每日一次。",
+                RareCharacterDailyLimit = "獎勵：每角色每日一次。",
+                DragoniteFormat = "地面寶箱保底龍晶礦：{0}",
+                DragoniteAccountDailyLimit = "獎勵：每帳號每日一次。",
+                DragoniteCharacterDailyLimit = "地面寶箱：每角色每日一次。",
+                CoinFormat = "保證金幣：{0}",
+                CoinAccountDailyLimit = "金幣獎勵：每帳號每日一次。",
+                CoinCharacterDailyLimit = "獎勵：每角色每日一次。",
+                SourceFormat = "資料來源：Guild Wars 2 Wiki — {0}",
+                SourceSeparator = "、",
+                VerifiedFormat = "查核日期：{0:yyyy-MM-dd}",
+                NoteResolver = key => key
+            };
+        }
+
+        private static JObject FindRewardEvent(JArray events, string id) {
+            return events.Children<JObject>().Single(item => (string)item["id"] == id);
         }
 
         private static void RunModuleUpdateTests() {
@@ -555,7 +889,11 @@ namespace Events_Module {
                 ["wiki:core-la:3"] = "[&BOQAAAA=]",
                 ["wiki:hot-vb:3"] = "[&BAgIAAA=]",
                 ["wiki:pof-dv:2"] = "[&BO0KAAA=]",
-                ["wiki:lws5-gv:1"] = "[&BA4MAAA=]"
+                ["wiki:lws5-gv:1"] = "[&BA4MAAA=]",
+                ["wiki:public-eotn:1"] = "[&BAkMAAA=]",
+                ["wiki:public-eotn:3"] = "[&BAkMAAA=]",
+                ["wiki:public-con:1"] = "[&BK4OAAA=]",
+                ["wiki:public-con:2"] = "[&BB8OAAA=]"
             };
 
             foreach (var expected in expectedWaypoints) {
@@ -566,14 +904,56 @@ namespace Events_Module {
             EventRewardCatalog rewardCatalog = EventRewardCatalog.Parse(
                 File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "event-rewards.json"))
             );
-            int matchedRewardCount = parsed.Events
-                                           .Select(item => rewardCatalog.Match(item.Waypoint, item.Name))
-                                           .Where(reward => reward != null)
-                                           .Select(reward => reward.Id)
-                                           .Distinct(StringComparer.Ordinal)
-                                           .Count();
-            Assert(matchedRewardCount == 13,
-                   $"Expected all 13 core world boss rewards to match the live Widget; matched {matchedRewardCount}.");
+            Dictionary<string, int> waypointCounts = parsed.Events
+                .Where(item => !string.IsNullOrWhiteSpace(item.Waypoint))
+                .GroupBy(item => item.Waypoint.Trim(), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+            var matchedRewards = parsed.Events
+                                       .Select(item => new {
+                                           Event = item,
+                                           Reward = rewardCatalog.Match(
+                                               item.StableId,
+                                               item.Waypoint,
+                                               IsWaypointUnique(item.Waypoint, waypointCounts),
+                                               item.Name
+                                           )
+                                       })
+                                       .Where(match => match.Reward != null)
+                                       .ToList();
+            int matchedRewardCount = matchedRewards.Count;
+            Assert(matchedRewardCount == 17,
+                   $"Expected 13 core world bosses and 4 fixed-coin events to match the live Widget; matched {matchedRewardCount}.");
+
+            var expectedRewardMappings = new Dictionary<string, string>(StringComparer.Ordinal) {
+                ["wiki:core-wb:1"] = "world-boss:taidha-covington",
+                ["wiki:core-wb:2"] = "world-boss:svanir-shaman-chief",
+                ["wiki:core-wb:3"] = "world-boss:megadestroyer",
+                ["wiki:core-wb:4"] = "world-boss:fire-elemental",
+                ["wiki:core-wb:5"] = "world-boss:the-shatterer",
+                ["wiki:core-wb:6"] = "world-boss:great-jungle-wurm",
+                ["wiki:core-wb:7"] = "world-boss:modniir-ulgoth",
+                ["wiki:core-wb:8"] = "world-boss:shadow-behemoth",
+                ["wiki:core-wb:9"] = "world-boss:claw-of-jormag",
+                ["wiki:core-wb:10"] = "world-boss:golem-mark-ii",
+                ["wiki:core-hwb:1"] = "world-boss:evolved-jungle-wurm",
+                ["wiki:core-hwb:2"] = "world-boss:karka-queen",
+                ["wiki:core-hwb:3"] = "world-boss:tequatl-the-sunless",
+                ["wiki:public-eotn:1"] = "public-instance:twisted-marionette",
+                ["wiki:public-eotn:3"] = "public-instance:dragonstorm",
+                ["wiki:public-con:1"] = "public-instance:convergence-mount-balrior",
+                ["wiki:public-con:2"] = "public-instance:convergence-outer-nayos"
+            };
+            Assert(matchedRewards.Count == expectedRewardMappings.Count,
+                   "The live reward mapping must contain exactly the allowlisted stable IDs.");
+            foreach (var mapping in expectedRewardMappings) {
+                Assert(matchedRewards.Any(match =>
+                           match.Event.StableId == mapping.Key && match.Reward.Id == mapping.Value),
+                       $"Missing or incorrect live reward mapping {mapping.Key} -> {mapping.Value}.");
+            }
+            foreach (string falsePositiveStableId in new[] { "wiki:soto-wt:1", "wiki:soto-wt:2", "wiki:soto-wt:3" }) {
+                Assert(matchedRewards.All(match => match.Event.StableId != falsePositiveStableId),
+                       falsePositiveStableId + " must not inherit the Outer Nayos fixed-coin reward.");
+            }
 
             using (var updateService = new ModuleUpdateService()) {
                 ModuleUpdateCheckResult updateResult = updateService.CheckAsync("0.0.0", CancellationToken.None)
@@ -606,6 +986,13 @@ namespace Events_Module {
                 threw = true;
             }
             Assert(threw, message);
+        }
+
+        private static bool IsWaypointUnique(string waypoint, IReadOnlyDictionary<string, int> counts) {
+            return !string.IsNullOrWhiteSpace(waypoint) &&
+                   counts != null &&
+                   counts.TryGetValue(waypoint.Trim(), out int count) &&
+                   count == 1;
         }
 
         private static void Assert(bool condition, string message) {

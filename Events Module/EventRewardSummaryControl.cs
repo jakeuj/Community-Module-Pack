@@ -20,37 +20,69 @@ namespace Events_Module {
             _reward = reward;
             _rareIcon = rareIcon;
             _dragoniteIcon = dragoniteIcon;
-            Size = new Point(92, 33);
+            Size = new Point(CalculateWidth(reward), 33);
         }
 
         protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-            DrawRewardIcon(spriteBatch, _rareIcon, "R", 0);
-            spriteBatch.DrawStringOnCtrl(
-                this,
-                "≥" + _reward.MinimumRareOrExoticItems,
-                Content.DefaultFont14,
-                new Rectangle(16, 0, 20, Height),
-                Color.White,
-                false,
-                true,
-                0,
-                HorizontalAlignment.Left,
-                VerticalAlignment.Middle
-            );
+            int x = 0;
 
-            DrawRewardIcon(spriteBatch, _dragoniteIcon, "D", 36);
-            spriteBatch.DrawStringOnCtrl(
-                this,
-                _reward.CompactDragoniteAmount,
-                Content.DefaultFont14,
-                new Rectangle(52, 0, 40, Height),
-                Color.White,
-                false,
-                true,
-                0,
-                HorizontalAlignment.Left,
-                VerticalAlignment.Middle
-            );
+            if (_reward.MinimumRareOrExoticItems.HasValue) {
+                DrawRewardIcon(spriteBatch, _rareIcon, "R", x);
+                spriteBatch.DrawStringOnCtrl(
+                    this,
+                    "≥" + _reward.MinimumRareOrExoticItems.Value,
+                    Content.DefaultFont14,
+                    new Rectangle(x + 16, 0, 20, Height),
+                    Color.White,
+                    false,
+                    true,
+                    0,
+                    HorizontalAlignment.Left,
+                    VerticalAlignment.Middle
+                );
+                x += 36;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_reward.CompactDragoniteAmount)) {
+                DrawRewardIcon(spriteBatch, _dragoniteIcon, "D", x);
+                spriteBatch.DrawStringOnCtrl(
+                    this,
+                    _reward.CompactDragoniteAmount,
+                    Content.DefaultFont14,
+                    new Rectangle(x + 16, 0, 40, Height),
+                    Color.White,
+                    false,
+                    true,
+                    0,
+                    HorizontalAlignment.Left,
+                    VerticalAlignment.Middle
+                );
+                x += 56;
+            }
+
+            if (_reward.GuaranteedCoinCopper.HasValue) {
+                if (x > 0) x += 4;
+                spriteBatch.DrawStringOnCtrl(
+                    this,
+                    EventRewardTextFormatter.FormatCoin(_reward.GuaranteedCoinCopper.Value),
+                    Content.DefaultFont14,
+                    new Rectangle(x, 0, 40, Height),
+                    ContentService.Colors.Chardonnay,
+                    false,
+                    true,
+                    0,
+                    HorizontalAlignment.Left,
+                    VerticalAlignment.Middle
+                );
+            }
+        }
+
+        private static int CalculateWidth(EventRewardSummary reward) {
+            int width = 0;
+            if (reward?.MinimumRareOrExoticItems.HasValue == true) width += 36;
+            if (!string.IsNullOrWhiteSpace(reward?.CompactDragoniteAmount)) width += 56;
+            if (reward?.GuaranteedCoinCopper.HasValue == true) width += (width > 0 ? 4 : 0) + 40;
+            return width;
         }
 
         private void DrawRewardIcon(SpriteBatch spriteBatch, AsyncTexture2D texture, string fallback, int x) {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
@@ -52,7 +53,7 @@ namespace Events_Module {
             var supportedFields = new Label {
                 Text = EventsModule.Localize(
                     "Chat_message_format_fields",
-                    "Fields: {point}, {event}, {event_zh}, {event_en}, {category}, {category_zh}, {category_en}, {time}. Use {{ and }} for literal braces."
+                    "Fields: {point}, {event}, {event_zh}, {event_en}, {category}, {category_zh}, {category_en}, {time}, {reward}. Use {{ and }} for literal braces."
                 ),
                 Location = new Point(ContentLeft, formatInput.Bottom + 6),
                 Size = new Point(ContentWidth, 48),
@@ -84,7 +85,7 @@ namespace Events_Module {
             Action updateFormatControls = delegate {
                 formatInput.Enabled = enableCustomFormat.Checked;
 
-                Meta previewMeta = GetPreviewMeta();
+                Meta previewMeta = GetPreviewMeta(formatInput.Text);
                 if (module == null || previewMeta == null) {
                     validationMessage.Text = string.Empty;
                     preview.Text = EventsModule.Localize(
@@ -237,11 +238,16 @@ namespace Events_Module {
             }
         }
 
-        private static Meta GetPreviewMeta() {
-            return Meta.Events?
-                       .Where(EventsModule.HasCopyableWaypoint)
-                       .OrderBy(meta => meta.NextTime)
-                       .FirstOrDefault();
+        private static Meta GetPreviewMeta(string format) {
+            IEnumerable<Meta> candidates = Meta.Events?
+                                               .Where(EventsModule.HasCopyableWaypoint)
+                                               .OrderBy(meta => meta.NextTime);
+
+            return EventChatMessagePreviewSelector.Select(
+                candidates,
+                format,
+                meta => meta?.Reward != null
+            );
         }
 
         private static string GetFormatError(EventChatMessageFormatResult result) {

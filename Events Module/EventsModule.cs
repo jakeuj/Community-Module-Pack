@@ -163,6 +163,10 @@ namespace Events_Module {
             _settingAutoUpdate           = selfManagedSettings.DefineSetting(@"autoUpdate",           true);
             _settingUseCustomCopyFormat  = selfManagedSettings.DefineSetting(@"useCustomCopyFormat",  false);
             _settingCustomCopyFormat     = selfManagedSettings.DefineSetting(@"customCopyFormat",     DefaultChatMessageFormat);
+            _settingCustomCopyFormat.Value = EventChatMessageFormatter.MigrateLegacyDefaultFormat(
+                _settingCustomCopyFormat.Value,
+                DefaultChatMessageFormat
+            );
 
             _settingNotificationsPosition = selfManagedSettings.DefineSetting("notificationPosition", new Point(180, 60));
 
@@ -248,7 +252,7 @@ namespace Events_Module {
 
         internal static string DefaultChatMessageFormat => Localize(
             "Chat_message_format_default",
-            "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?"
+            "{point} 【{category_zh}】 {event} {time} {reward}"
         );
 
         internal static bool HasCopyableWaypoint(Meta meta) {
@@ -269,8 +273,20 @@ namespace Events_Module {
                 EventEn = string.IsNullOrWhiteSpace(englishName) ? localizedName : englishName,
                 CategoryZh = localizedCategory,
                 CategoryEn = string.IsNullOrWhiteSpace(englishCategory) ? localizedCategory : englishCategory,
-                Time = meta.NextTime.ToShortTimeString()
+                Time = meta.NextTime.ToShortTimeString(),
+                Reward = GetCompactRewardSummary(meta.Reward)
             };
+        }
+
+        private static string GetCompactRewardSummary(EventRewardSummary reward) {
+            return EventRewardTextFormatter.BuildCompactSummary(
+                reward,
+                Localize("Reward_compact_prefix", "Guaranteed: "),
+                Localize("Reward_compact_separator", ", "),
+                Localize("Reward_compact_rare_or_exotic", "rare/exotic ≥{0}"),
+                Localize("Reward_compact_dragonite", "Dragonite {0}"),
+                Localize("Reward_compact_coin_account_daily", "{0} (daily per account)")
+            );
         }
 
         internal EventChatMessageFormatResult FormatEventChatMessage(Meta meta, string format) {
@@ -622,34 +638,40 @@ namespace Events_Module {
         }
 
         private static string GetRewardDetails(EventRewardSummary reward) {
-            var message = new StringBuilder();
-            message.AppendLine(Localize("Reward_information", "World boss rewards"));
-            message.AppendLine(string.Format(
-                Localize("Reward_guaranteed_rare_or_exotic_items", "Guaranteed rare or exotic items: at least {0}"),
-                reward.MinimumRareOrExoticItems
-            ));
-            message.AppendLine(Localize("Reward_bonus_chest_daily_limit", "Bonus chest: once per account per day."));
-            message.AppendLine();
-            message.AppendLine(string.Format(
-                Localize("Reward_guaranteed_ground_chest_dragonite", "Guaranteed Dragonite Ore in the ground chest: {0}"),
-                reward.DragoniteAmount
-            ));
-            message.AppendLine(Localize("Reward_ground_chest_daily_limit", "Ground chest: once per character per day."));
+            string genericAccountLimit = Localize("Reward_account_daily_limit", "Reward: once per account per day.");
+            string genericCharacterLimit = Localize("Reward_character_daily_limit", "Reward: once per character per day.");
 
-            if (!string.IsNullOrWhiteSpace(reward.NoteKey)) {
-                message.AppendLine(Localize(reward.NoteKey, reward.NoteKey));
-            }
-
-            message.AppendLine();
-            message.AppendLine(string.Format(
-                Localize("Reward_source", "Source: Guild Wars 2 Wiki — {0}"),
-                reward.SourceName
-            ));
-            message.Append(string.Format(
-                Localize("Reward_verified_on", "Verified: {0:yyyy-MM-dd}"),
-                reward.VerifiedOn
-            ));
-            return message.ToString();
+            return EventRewardTextFormatter.BuildDetailedSummary(reward, new EventRewardDetailFormats {
+                Title = Localize("Reward_information", "Event rewards"),
+                RareOrExoticFormat = Localize(
+                    "Reward_guaranteed_rare_or_exotic_items",
+                    "Guaranteed rare or exotic items: at least {0}"
+                ),
+                RareAccountDailyLimit = Localize(
+                    "Reward_bonus_chest_daily_limit",
+                    "Bonus chest: once per account per day."
+                ),
+                RareCharacterDailyLimit = genericCharacterLimit,
+                DragoniteFormat = Localize(
+                    "Reward_guaranteed_ground_chest_dragonite",
+                    "Guaranteed Dragonite Ore in the ground chest: {0}"
+                ),
+                DragoniteAccountDailyLimit = genericAccountLimit,
+                DragoniteCharacterDailyLimit = Localize(
+                    "Reward_ground_chest_daily_limit",
+                    "Ground chest: once per character per day."
+                ),
+                CoinFormat = Localize("Reward_guaranteed_coin", "Guaranteed coin: {0}"),
+                CoinAccountDailyLimit = Localize(
+                    "Reward_coin_account_daily_limit",
+                    "Coin reward: once per account per day."
+                ),
+                CoinCharacterDailyLimit = genericCharacterLimit,
+                SourceFormat = Localize("Reward_source", "Source: Guild Wars 2 Wiki — {0}"),
+                SourceSeparator = Localize("Reward_source_separator", "; "),
+                VerifiedFormat = Localize("Reward_verified_on", "Verified: {0:yyyy-MM-dd}"),
+                NoteResolver = key => Localize(key, key)
+            });
         }
 
         private void UpdateSort(object sender, EventArgs e) {

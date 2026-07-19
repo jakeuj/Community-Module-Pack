@@ -474,7 +474,7 @@ Right click to dismiss.</value>
   <data name="Dragonstorm" xml:space="preserve"><value>Dragonstorm</value></data>
   <data name="Tower of Nightmares" xml:space="preserve"><value>Tower of Nightmares</value></data>
   <data name="Reward_information" xml:space="preserve">
-    <value>World boss rewards</value>
+    <value>Event rewards</value>
   </data>
   <data name="Reward_guaranteed_rare_or_exotic_items" xml:space="preserve">
     <value>Guaranteed rare or exotic items: at least {0}</value>
@@ -488,8 +488,23 @@ Right click to dismiss.</value>
   <data name="Reward_bonus_chest_daily_limit" xml:space="preserve">
     <value>Bonus chest: once per account per day.</value>
   </data>
+  <data name="Reward_guaranteed_coin" xml:space="preserve">
+    <value>Guaranteed coin: {0}</value>
+  </data>
+  <data name="Reward_coin_account_daily_limit" xml:space="preserve">
+    <value>Coin reward: once per account per day.</value>
+  </data>
+  <data name="Reward_account_daily_limit" xml:space="preserve">
+    <value>Reward: once per account per day.</value>
+  </data>
+  <data name="Reward_character_daily_limit" xml:space="preserve">
+    <value>Reward: once per character per day.</value>
+  </data>
   <data name="Reward_source" xml:space="preserve">
     <value>Source: Guild Wars 2 Wiki — {0}</value>
+  </data>
+  <data name="Reward_source_separator" xml:space="preserve">
+    <value>; </value>
   </data>
   <data name="Reward_verified_on" xml:space="preserve">
     <value>Verified: {0:yyyy-MM-dd}</value>
@@ -576,10 +591,25 @@ Right click to dismiss.</value>
     <value>When enabled, waypoint copy actions include event details and your custom text.</value>
   </data>
   <data name="Chat_message_format_default" xml:space="preserve">
-    <value>{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?</value>
+    <value>{point} 【{category_zh}】 {event} {time} {reward}</value>
+  </data>
+  <data name="Reward_compact_prefix" xml:space="preserve">
+    <value>Guaranteed: </value>
+  </data>
+  <data name="Reward_compact_separator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Reward_compact_rare_or_exotic" xml:space="preserve">
+    <value>rare/exotic ≥{0}</value>
+  </data>
+  <data name="Reward_compact_dragonite" xml:space="preserve">
+    <value>Dragonite {0}</value>
+  </data>
+  <data name="Reward_compact_coin_account_daily" xml:space="preserve">
+    <value>{0} (daily per account)</value>
   </data>
   <data name="Chat_message_format_fields" xml:space="preserve">
-    <value>Fields: {point}, {event}, {event_zh}, {event_en}, {category}, {category_zh}, {category_en}, {time}. Use {{ and }} for literal braces.</value>
+    <value>Fields: {point}, {event}, {event_zh}, {event_en}, {category}, {category_zh}, {category_en}, {time}, {reward}. Use {{ and }} for literal braces.</value>
   </data>
   <data name="Chat_message_format_preview" xml:space="preserve">
     <value>Format preview: {0}</value>

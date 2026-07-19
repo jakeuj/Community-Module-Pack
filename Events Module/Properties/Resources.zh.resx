@@ -432,7 +432,7 @@
   <data name="Dragonstorm" xml:space="preserve"><value>巨龍風暴（公共）</value></data>
   <data name="Tower of Nightmares" xml:space="preserve"><value>夢魘之塔（公共）</value></data>
   <data name="Reward_information" xml:space="preserve">
-    <value>世界王獎勵資訊</value>
+    <value>事件獎勵資訊</value>
   </data>
   <data name="Reward_guaranteed_rare_or_exotic_items" xml:space="preserve">
     <value>保底稀有或特異裝備：至少 {0} 件</value>
@@ -446,8 +446,23 @@
   <data name="Reward_bonus_chest_daily_limit" xml:space="preserve">
     <value>額外獎勵寶箱：每帳號每日一次。</value>
   </data>
+  <data name="Reward_guaranteed_coin" xml:space="preserve">
+    <value>保證金幣：{0}</value>
+  </data>
+  <data name="Reward_coin_account_daily_limit" xml:space="preserve">
+    <value>金幣獎勵：每帳號每日一次。</value>
+  </data>
+  <data name="Reward_account_daily_limit" xml:space="preserve">
+    <value>獎勵：每帳號每日一次。</value>
+  </data>
+  <data name="Reward_character_daily_limit" xml:space="preserve">
+    <value>獎勵：每角色每日一次。</value>
+  </data>
   <data name="Reward_source" xml:space="preserve">
     <value>資料來源：Guild Wars 2 Wiki — {0}</value>
+  </data>
+  <data name="Reward_source_separator" xml:space="preserve">
+    <value>、</value>
   </data>
   <data name="Reward_verified_on" xml:space="preserve">
     <value>查核日期：{0:yyyy-MM-dd}</value>
@@ -534,10 +549,25 @@
     <value>啟用後，複製傳送點時會加入事件資訊與自訂文字。</value>
   </data>
   <data name="Chat_message_format_default" xml:space="preserve">
-    <value>{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？</value>
+    <value>{point} 【{category_zh}】 {event} {time} {reward}</value>
+  </data>
+  <data name="Reward_compact_prefix" xml:space="preserve">
+    <value>保底：</value>
+  </data>
+  <data name="Reward_compact_separator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Reward_compact_rare_or_exotic" xml:space="preserve">
+    <value>稀有/特異≥{0}</value>
+  </data>
+  <data name="Reward_compact_dragonite" xml:space="preserve">
+    <value>龍晶礦{0}</value>
+  </data>
+  <data name="Reward_compact_coin_account_daily" xml:space="preserve">
+    <value>{0}（帳號每日）</value>
   </data>
   <data name="Chat_message_format_fields" xml:space="preserve">
-    <value>欄位：{point}、{event}、{event_zh}、{event_en}、{category}、{category_zh}、{category_en}、{time}。字面大括號請使用 {{ 與 }}。</value>
+    <value>欄位：{point}、{event}、{event_zh}、{event_en}、{category}、{category_zh}、{category_en}、{time}、{reward}。字面大括號請使用 {{ 與 }}。</value>
   </data>
   <data name="Chat_message_format_preview" xml:space="preserve">
     <value>格式預覽：{0}</value>

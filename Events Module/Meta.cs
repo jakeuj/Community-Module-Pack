@@ -277,11 +277,15 @@ namespace Events_Module {
                 }
             }
 
+            Dictionary<string, int> waypointCounts = CountWaypoints(uniqueEvents.Select(meta => meta.Waypoint));
+
             foreach (var meta in uniqueEvents) {
                 meta._times = meta._times.Distinct().OrderBy(time => time.TimeOfDay).ToList();
                 meta.EnglishName = meta.Name;
                 meta.Reward = (rewardCatalog ?? EventRewardCatalog.Empty).Match(
+                    meta.StableId,
                     meta.Waypoint,
+                    IsWaypointUnique(meta.Waypoint, waypointCounts),
                     meta.Name,
                     meta.Colloquial
                 );
@@ -302,6 +306,10 @@ namespace Events_Module {
                                                         EventRewardCatalog rewardCatalog = null) {
             var bundled = bundledEvents ?? new List<Meta>();
             var officialEvents = new List<Meta>();
+            var officialDefinitions = (definitions ?? Enumerable.Empty<OfficialEventDefinition>()).ToList();
+            Dictionary<string, int> waypointCounts = CountWaypoints(
+                officialDefinitions.Select(definition => definition.Waypoint)
+            );
             var iconCandidates = bundled.Select(item => new OfficialEventIconCandidate {
                 Name = item.Name,
                 Colloquial = item.Colloquial,
@@ -312,7 +320,7 @@ namespace Events_Module {
             }).ToList();
             DateTime utcDay = DateTime.UtcNow.Date;
 
-            foreach (var definition in definitions ?? Enumerable.Empty<OfficialEventDefinition>()) {
+            foreach (var definition in officialDefinitions) {
                 if (definition.StartMinutesUtc == null || definition.StartMinutesUtc.Count == 0) continue;
 
                 Meta template = FindBundledTemplate(definition, bundled);
@@ -345,7 +353,9 @@ namespace Events_Module {
                 };
 
                 meta.Reward = (rewardCatalog ?? EventRewardCatalog.Empty).Match(
+                    definition.StableId,
                     definition.Waypoint,
+                    IsWaypointUnique(definition.Waypoint, waypointCounts),
                     definition.Name,
                     template?.Name,
                     template?.Colloquial
@@ -361,6 +371,21 @@ namespace Events_Module {
             }
 
             return officialEvents;
+        }
+
+        private static Dictionary<string, int> CountWaypoints(IEnumerable<string> waypoints) {
+            return (waypoints ?? Enumerable.Empty<string>())
+                   .Where(waypoint => !string.IsNullOrWhiteSpace(waypoint))
+                   .Select(waypoint => waypoint.Trim())
+                   .GroupBy(waypoint => waypoint, StringComparer.Ordinal)
+                   .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+        }
+
+        private static bool IsWaypointUnique(string waypoint, IReadOnlyDictionary<string, int> counts) {
+            return !string.IsNullOrWhiteSpace(waypoint) &&
+                   counts != null &&
+                   counts.TryGetValue(waypoint.Trim(), out int count) &&
+                   count == 1;
         }
 
         private static Meta FindBundledTemplate(OfficialEventDefinition definition, IReadOnlyList<Meta> bundled) {

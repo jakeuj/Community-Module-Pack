@@ -1,117 +1,235 @@
 {
-  "version": 1,
+  "version": 3,
   "verifiedOn": "2026-07-18",
-  "minimumRareOrExoticItems": 1,
-  "rulesSource": "https://wiki.guildwars2.com/wiki/World_boss",
   "events": [
     {
       "id": "world-boss:taidha-covington",
+      "stableIds": [ "wiki:core-wb:1" ],
       "names": [ "Admiral Taidha Covington", "Taidha Covington", "Hydra Queen" ],
       "waypoint": "[&BKgBAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Taidha's Treasures",
-      "source": "https://wiki.guildwars2.com/wiki/Taidha%27s_Treasures"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Taidha's Treasures", "url": "https://wiki.guildwars2.com/wiki/Taidha%27s_Treasures" }
+      ]
     },
     {
       "id": "world-boss:svanir-shaman-chief",
+      "stableIds": [ "wiki:core-wb:2" ],
       "names": [ "Svanir Shaman Chief", "Frozen Maw" ],
       "waypoint": "[&BMIDAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Glorious Chest (The Frozen Maw)",
-      "source": "https://wiki.guildwars2.com/wiki/Glorious_Chest_(The_Frozen_Maw)"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Glorious Chest (The Frozen Maw)", "url": "https://wiki.guildwars2.com/wiki/Glorious_Chest_(The_Frozen_Maw)" }
+      ]
     },
     {
       "id": "world-boss:megadestroyer",
+      "stableIds": [ "wiki:core-wb:3" ],
       "names": [ "Megadestroyer" ],
       "waypoint": "[&BM0CAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Ancient Treasure",
-      "source": "https://wiki.guildwars2.com/wiki/Ancient_Treasure"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Ancient Treasure", "url": "https://wiki.guildwars2.com/wiki/Ancient_Treasure" }
+      ]
     },
     {
       "id": "world-boss:fire-elemental",
+      "stableIds": [ "wiki:core-wb:4" ],
       "names": [ "Fire Elemental" ],
       "waypoint": "[&BEcAAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Chest (Thaumanova Reactor Fallout)",
-      "source": "https://wiki.guildwars2.com/wiki/Chest_(Thaumanova_Reactor_Fallout)"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Chest (Thaumanova Reactor Fallout)", "url": "https://wiki.guildwars2.com/wiki/Chest_(Thaumanova_Reactor_Fallout)" }
+      ]
     },
     {
       "id": "world-boss:the-shatterer",
+      "stableIds": [ "wiki:core-wb:5" ],
       "names": [ "The Shatterer", "Shatterer" ],
       "waypoint": "[&BE4DAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "15–25",
-      "sourceName": "Dragon Chest (The Shatterer)",
-      "source": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(The_Shatterer)"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Dragon Chest (The Shatterer)", "url": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(The_Shatterer)" }
+      ]
     },
     {
       "id": "world-boss:great-jungle-wurm",
+      "stableIds": [ "wiki:core-wb:6" ],
       "names": [ "Great Jungle Wurm", "Jungle Wurm" ],
       "waypoint": "[&BEEFAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Swamp Chest",
-      "source": "https://wiki.guildwars2.com/wiki/Swamp_Chest"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Swamp Chest", "url": "https://wiki.guildwars2.com/wiki/Swamp_Chest" }
+      ]
     },
     {
       "id": "world-boss:modniir-ulgoth",
+      "stableIds": [ "wiki:core-wb:7" ],
       "names": [ "Modniir Ulgoth", "Ulgoth the Modniir" ],
       "waypoint": "[&BLAAAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Splendid Chest (Ulgoth the Modniir)",
-      "source": "https://wiki.guildwars2.com/wiki/Splendid_Chest_(Ulgoth_the_Modniir)"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Splendid Chest (Ulgoth the Modniir)", "url": "https://wiki.guildwars2.com/wiki/Splendid_Chest_(Ulgoth_the_Modniir)" }
+      ]
     },
     {
       "id": "world-boss:shadow-behemoth",
+      "stableIds": [ "wiki:core-wb:8" ],
       "names": [ "Shadow Behemoth" ],
       "waypoint": "[&BPcAAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "3–5",
-      "sourceName": "Demonic Chest",
-      "source": "https://wiki.guildwars2.com/wiki/Demonic_Chest"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Demonic Chest", "url": "https://wiki.guildwars2.com/wiki/Demonic_Chest" }
+      ]
     },
     {
       "id": "world-boss:claw-of-jormag",
+      "stableIds": [ "wiki:core-wb:9" ],
       "names": [ "Claw of Jormag" ],
       "waypoint": "[&BHoCAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "15–17、19–21、23–24",
       "compactDragonite": "15–24*",
+      "dragoniteLimit": "character-daily",
       "noteKey": "Reward_note_claw_of_jormag",
-      "sourceName": "Magnificent Chest (Claw of Jormag)",
-      "source": "https://wiki.guildwars2.com/wiki/Magnificent_Chest_(Claw_of_Jormag)"
+      "sources": [
+        { "name": "Magnificent Chest (Claw of Jormag)", "url": "https://wiki.guildwars2.com/wiki/Magnificent_Chest_(Claw_of_Jormag)" }
+      ]
     },
     {
       "id": "world-boss:golem-mark-ii",
+      "stableIds": [ "wiki:core-wb:10" ],
       "names": [ "Golem Mark II", "Inquest Golem Mark II" ],
       "waypoint": "[&BNQCAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "15–25",
-      "sourceName": "Inquest Resources",
-      "source": "https://wiki.guildwars2.com/wiki/Inquest_Resources"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Inquest Resources", "url": "https://wiki.guildwars2.com/wiki/Inquest_Resources" }
+      ]
     },
     {
       "id": "world-boss:evolved-jungle-wurm",
+      "stableIds": [ "wiki:core-hwb:1" ],
       "names": [ "Evolved Jungle Wurm", "Triple Trouble" ],
       "waypoint": "[&BKoBAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "1–15",
       "compactDragonite": "1–15+",
+      "dragoniteLimit": "character-daily",
       "noteKey": "Reward_note_evolved_jungle_wurm",
-      "sourceName": "Great Jungle Wurm Chest",
-      "source": "https://wiki.guildwars2.com/wiki/Great_Jungle_Wurm_Chest"
+      "sources": [
+        { "name": "Great Jungle Wurm Chest", "url": "https://wiki.guildwars2.com/wiki/Great_Jungle_Wurm_Chest" }
+      ]
     },
     {
       "id": "world-boss:karka-queen",
+      "stableIds": [ "wiki:core-hwb:2" ],
       "names": [ "Karka Queen" ],
       "waypoint": "[&BNUGAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "30",
-      "sourceName": "Chest (Karka Queen)",
-      "source": "https://wiki.guildwars2.com/wiki/Chest_(Karka_Queen)"
+      "dragoniteLimit": "character-daily",
+      "sources": [
+        { "name": "Chest (Karka Queen)", "url": "https://wiki.guildwars2.com/wiki/Chest_(Karka_Queen)" }
+      ]
     },
     {
       "id": "world-boss:tequatl-the-sunless",
+      "stableIds": [ "wiki:core-hwb:3" ],
       "names": [ "Tequatl the Sunless", "Tequatl" ],
       "waypoint": "[&BNABAAA=]",
+      "minimumRareOrExoticItems": 1,
+      "rareOrExoticLimit": "account-daily",
       "dragonite": "15–25",
+      "dragoniteLimit": "character-daily",
       "noteKey": "Reward_note_tequatl",
-      "sourceName": "Dragon Chest (Tequatl the Sunless)",
-      "source": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(Tequatl_the_Sunless)"
+      "sources": [
+        { "name": "Dragon Chest (Tequatl the Sunless)", "url": "https://wiki.guildwars2.com/wiki/Dragon_Chest_(Tequatl_the_Sunless)" }
+      ]
+    },
+    {
+      "id": "public-instance:dragonstorm",
+      "stableIds": [ "wiki:public-eotn:3" ],
+      "names": [ "Dragonstorm", "Dragonstorm (Public)" ],
+      "minimumRareOrExoticItems": 2,
+      "rareOrExoticLimit": "account-daily",
+      "guaranteedCoinCopper": 20000,
+      "coinLimit": "account-daily",
+      "verifiedOn": "2026-07-19",
+      "sources": [
+        { "name": "Dragonstorm", "url": "https://wiki.guildwars2.com/wiki/Dragonstorm" }
+      ]
+    },
+    {
+      "id": "public-instance:twisted-marionette",
+      "stableIds": [ "wiki:public-eotn:1" ],
+      "names": [ "Twisted Marionette", "Twisted Marionette (Public)" ],
+      "minimumRareOrExoticItems": 2,
+      "rareOrExoticLimit": "account-daily",
+      "dragonite": "15",
+      "dragoniteLimit": "character-daily",
+      "guaranteedCoinCopper": 20000,
+      "coinLimit": "account-daily",
+      "verifiedOn": "2026-07-19",
+      "sources": [
+        { "name": "The Twisted Marionette", "url": "https://wiki.guildwars2.com/wiki/The_Twisted_Marionette" },
+        { "name": "Hoard of the Marionette Warden V", "url": "https://wiki.guildwars2.com/wiki/Hoard_of_the_Marionette_Warden_V" },
+        { "name": "Marionette Chest", "url": "https://wiki.guildwars2.com/wiki/Marionette_Chest" }
+      ]
+    },
+    {
+      "id": "public-instance:convergence-mount-balrior",
+      "stableIds": [ "wiki:public-con:1" ],
+      "names": [ "Mount Balrior", "Convergence: Mount Balrior" ],
+      "waypoint": "[&BK4OAAA=]",
+      "minimumRareOrExoticItems": 3,
+      "rareOrExoticLimit": "account-daily",
+      "guaranteedCoinCopper": 20000,
+      "coinLimit": "account-daily",
+      "verifiedOn": "2026-07-19",
+      "sources": [
+        { "name": "Convergence: Mount Balrior", "url": "https://wiki.guildwars2.com/wiki/Convergence:_Mount_Balrior" }
+      ]
+    },
+    {
+      "id": "public-instance:convergence-outer-nayos",
+      "stableIds": [ "wiki:public-con:2" ],
+      "names": [ "Outer Nayos", "Convergence: Outer Nayos" ],
+      "guaranteedCoinCopper": 20000,
+      "coinLimit": "account-daily",
+      "verifiedOn": "2026-07-19",
+      "sources": [
+        { "name": "Convergence: Outer Nayos", "url": "https://wiki.guildwars2.com/wiki/Convergence:_Outer_Nayos" }
+      ]
     }
   ]
 }
