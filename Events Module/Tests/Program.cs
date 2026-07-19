@@ -51,6 +51,35 @@ namespace Events_Module {
   }
 }";
 
+        private const string WikiLinkFixture = @"{
+  'config': { 'version': 'test-wiki-links' },
+  'events': {
+    'wiki-links': {
+      'category': 'Test',
+      'name': 'Wiki Links',
+      'segments': {
+        '1': { 'name': 'Mount Balrior', 'link': 'Convergence: Mount Balrior' },
+        '2': { 'name': 'Outer Nayos', 'link': 'Convergence: Outer Nayos#Walkthrough' },
+        '3': { 'name': 'Official Absolute', 'link': 'https://wiki.guildwars2.com/wiki/Alpha_Event#Walkthrough' },
+        '4': { 'name': 'Insecure Absolute', 'link': 'http://wiki.guildwars2.com/wiki/Alpha_Event' },
+        '5': { 'name': 'External Absolute', 'link': 'https://example.com/wiki/Alpha_Event' },
+        '6': { 'name': 'Malformed Absolute', 'link': 'https://[invalid' }
+      },
+      'sequences': {
+        'partial': [
+          { 'r': 1, 'd': 240 },
+          { 'r': 2, 'd': 240 },
+          { 'r': 3, 'd': 240 },
+          { 'r': 4, 'd': 240 },
+          { 'r': 5, 'd': 240 },
+          { 'r': 6, 'd': 240 }
+        ],
+        'pattern': []
+      }
+    }
+  }
+}";
+
         public static int Main(string[] args) {
             try {
                 RunOfflineTests();
@@ -80,6 +109,21 @@ namespace Events_Module {
 
             OfficialEventTimerParseResult partialOnly = OfficialEventTimerParser.Parse(PartialOnlyFixture, requireProductionCounts: false);
             Assert(partialOnly.Events.Single().StartMinutesUtc.SequenceEqual(new[] { 0 }), "A complete partial sequence should not require a pattern.");
+
+            OfficialEventTimerParseResult wikiLinks = OfficialEventTimerParser.Parse(WikiLinkFixture, requireProductionCounts: false);
+            Dictionary<string, OfficialEventDefinition> wikiLinksById = wikiLinks.Events.ToDictionary(item => item.StableId, StringComparer.Ordinal);
+            Assert(wikiLinksById["wiki:wiki-links:1"].Wiki == "https://wiki.guildwars2.com/wiki/Convergence%3A_Mount_Balrior",
+                   "Wiki titles containing a colon must not be mistaken for absolute URI schemes.");
+            Assert(wikiLinksById["wiki:wiki-links:2"].Wiki == "https://wiki.guildwars2.com/wiki/Convergence%3A_Outer_Nayos#Walkthrough",
+                   "Wiki titles containing a colon should preserve anchors.");
+            Assert(wikiLinksById["wiki:wiki-links:3"].Wiki == "https://wiki.guildwars2.com/wiki/Alpha_Event#Walkthrough",
+                   "Official absolute HTTPS Wiki URLs should be preserved.");
+            Assert(string.IsNullOrEmpty(wikiLinksById["wiki:wiki-links:4"].Wiki),
+                   "Insecure absolute Wiki URLs must be rejected.");
+            Assert(string.IsNullOrEmpty(wikiLinksById["wiki:wiki-links:5"].Wiki),
+                   "Absolute URLs outside the official Wiki host must be rejected.");
+            Assert(string.IsNullOrEmpty(wikiLinksById["wiki:wiki-links:6"].Wiki),
+                   "Malformed absolute URLs must be rejected.");
 
             AssertThrows(Fixture.Replace("'r': 2", "'r': 9"), "Missing segment references must be rejected.");
             AssertThrows(Fixture.Replace("[&BEwCAAA=]", "not-a-chat-link"), "Malformed waypoint chat links must be rejected.");
@@ -899,6 +943,16 @@ namespace Events_Module {
             foreach (var expected in expectedWaypoints) {
                 Assert(byId.TryGetValue(expected.Key, out OfficialEventDefinition definition), "Missing live official event " + expected.Key + ".");
                 Assert(definition.Waypoint == expected.Value, $"Unexpected live waypoint for {expected.Key}: {definition.Waypoint}.");
+            }
+
+            var expectedWikis = new Dictionary<string, string>(StringComparer.Ordinal) {
+                ["wiki:public-con:1"] = "https://wiki.guildwars2.com/wiki/Convergence%3A_Mount_Balrior",
+                ["wiki:public-con:2"] = "https://wiki.guildwars2.com/wiki/Convergence%3A_Outer_Nayos"
+            };
+
+            foreach (var expected in expectedWikis) {
+                Assert(byId.TryGetValue(expected.Key, out OfficialEventDefinition definition), "Missing live official event " + expected.Key + ".");
+                Assert(definition.Wiki == expected.Value, $"Unexpected live Wiki URL for {expected.Key}: {definition.Wiki}.");
             }
 
             EventRewardCatalog rewardCatalog = EventRewardCatalog.Parse(

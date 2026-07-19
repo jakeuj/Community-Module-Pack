@@ -1,6 +1,6 @@
 ---
 name: localize-build-events-module
-description: Localize, audit, build, test, package, safely install, self-update, release, document, and present the Community-Module-Pack Events and Metas Observer for Taiwan Traditional Chinese. Use when translating the official Guild Wars 2 Wiki Event timer or bundled events.json names; preserving bilingual search/display; implementing or troubleshooting waypoint/chat clipboard formats, compact verified reward summaries, previews, and settings; auditing Wiki-sourced world-boss or fixed-coin rewards; diagnosing localization, schedule, waypoint, cache, parser, icon, package, or installed-BHM regressions; implementing or troubleshooting GitHub Release self-update, autoUpdate settings, SHA-256 installs, restarts, or debug-module guards; injecting fork package versions without source-manifest churn; maintaining events-module-zh-tw CI and release digest checks; publishing a fork release; or building, validating, optimizing, and deploying the jakeuj GW2 Tools GitHub Pages landing page and tool portfolio.
+description: Localize, audit, build, test, package, safely install, self-update, release, document, and present the Community-Module-Pack Events and Metas Observer for Taiwan Traditional Chinese. Use when translating the official Guild Wars 2 Wiki Event timer or bundled events.json names; preserving bilingual search/display; implementing or troubleshooting Wiki links/buttons, waypoint/chat clipboard formats, compact verified reward summaries, previews, and settings; auditing Wiki-sourced world-boss or fixed-coin rewards; diagnosing localization, schedule, waypoint, cache, parser, icon, package, or installed-BHM regressions; implementing or troubleshooting GitHub Release self-update, autoUpdate settings, SHA-256 installs, restarts, or debug-module guards; injecting fork package versions without source-manifest churn; maintaining events-module-zh-tw CI and release digest checks; publishing a fork release; or building, validating, optimizing, and deploying the jakeuj GW2 Tools GitHub Pages landing page and tool portfolio.
 ---
 
 # Localize, update, test, and release Events Module
@@ -11,6 +11,7 @@ Treat the official English Guild Wars 2 Wiki timer data as the schedule authorit
 
 - Load `Widget:Event_timer/data.json` through `https://wiki.guildwars2.com/api.php` for event times, Wiki links, and waypoint chat links.
 - Keep source priority: validated official live data → last-known-good official cache → bundled `events.json`.
+- Treat a Widget `link` containing `://` as URL-shaped and accept it only when it is HTTPS on `wiki.guildwars2.com`; treat every other nonempty value as a Wiki title, including namespace titles such as `Convergence: Mount Balrior`. Do not use absolute `Uri.TryCreate` alone to distinguish titles because .NET treats the text before `:` as a URI scheme.
 - Use bundled data for Taiwan Traditional Chinese terminology, icons, reminders, and template matching; never let it override newer official times or waypoints.
 - Do not substitute the ArenaNet API v2 for the timer Widget. API v2 does not provide the complete Wiki timer schedule and waypoints.
 - Treat `ref/event-rewards.json` as a separately verified enrichment source. The timer Widget has no reward fields; use current Guild Wars 2 Wiki reward/chest pages and never scrape that_shaman or another third-party timer at runtime.
@@ -50,6 +51,8 @@ Treat the official English Guild Wars 2 Wiki timer data as the schedule authorit
    ```powershell
    & .agents\skills\localize-build-events-module\scripts\test-official-event-timer.ps1 -Live
    ```
+
+   For Wiki-link parser changes, cover ordinary titles, namespace titles containing `:`, anchors, valid official absolute URLs, and malformed, non-HTTPS, or off-domain URL-shaped values offline; keep live assertions for known namespace links such as both Convergence events.
 
 5. Establish terminology from the current Wishing Star timer data, then cross-check GW2 API `lang=zh` proper nouns and player usage. Convert Simplified Chinese manually to Taiwan Traditional Chinese.
 6. For reward changes, verify each amount and rule against current Guild Wars 2 Wiki pages, retain every supporting HTTPS source URL and `verifiedOn` date, and add or update parser tests. Match by official stable ID first, then a waypoint proven unique across the complete selected schedule with a compatible normalized alias, and finally a unique normalized English alias; never infer rewards from a shared waypoint or for events absent from the catalog.

@@ -264,7 +264,9 @@ namespace Events_Module {
             if (string.IsNullOrWhiteSpace(link)) return string.Empty;
 
             string trimmed = link.Trim();
-            if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri absolute)) {
+            if (trimmed.IndexOf("://", StringComparison.Ordinal) >= 0) {
+                if (!Uri.TryCreate(trimmed, UriKind.Absolute, out Uri absolute)) return string.Empty;
+
                 return absolute.Scheme == Uri.UriSchemeHttps &&
                        string.Equals(absolute.Host, "wiki.guildwars2.com", StringComparison.OrdinalIgnoreCase)
                     ? absolute.AbsoluteUri

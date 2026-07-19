@@ -121,6 +121,7 @@ https://wiki.guildwars2.com/api.php
 - 一般六小時檢查一次；啟動時讀取有效快取，手動更新時繞過 HTTP cache。
 - 只有 revision ID 或 SHA1 改變才重建事件；狀態列顯示 Widget 版本、revision、時間與 SHA1。
 - 只接受 `https://wiki.guildwars2.com/` Wiki URL，以及可解碼且第一 byte 為 `0x04` 的 waypoint chatlink。
+- Widget 的 `link` 可能是完整 URL，也可能是含 namespace 冒號的頁面標題，例如 `Convergence: Mount Balrior`。只有含 `://` 的值才按 URL 驗證，且必須是官方 Wiki HTTPS；其他非空值按頁面標題編碼成官方 URL。不可單獨用 `Uri.TryCreate(..., UriKind.Absolute)` 分流，因為 .NET 會把 `Convergence:` 誤認為自訂 URI scheme。
 
 ## 資源鍵與術語
 
@@ -156,6 +157,7 @@ https://wiki.guildwars2.com/api.php
 - 先套 `partial`，再重複 `pattern` 展開完整 UTC 日循環。
 - 略過官方 Event timers 頁本身不顯示的季節性 group。
 - 產生 `wiki:{group}:{segment}` stable ID。
+- 正確解析普通頁面標題、含 `:` 的 namespace 標題、`#anchor` 與官方絕對 HTTPS URL，並拒絕 malformed、非 HTTPS 或非官方網域的 URL 型輸入。
 - 不替沒有 chatlink 的 segment 製造 waypoint。
 
 快取必須在內容完整通過 parser 後才寫入，並以 temporary file 加 replace/copy 原子更新。壞掉或 schema 過期的快取直接忽略。網路、HTTP、MediaWiki、JSON 或 timeout 失敗時，有有效快取就使用快取；沒有才退回內建 `events.json`。
@@ -210,7 +212,7 @@ Parser 離線測試與 live audit：
 & .agents\skills\localize-build-events-module\scripts\test-official-event-timer.ps1 -Live
 ```
 
-`-Live` 會查目前 Wiki revision，驗證已知 stable ID 的 waypoint，以及精確的 17 組 `(stable ID, reward ID)`；不得先對 reward ID 去重，以免漏掉共用 waypoint 造成的額外事件誤配。測試明確拒絕 `wiki:soto-wt:1`、`:2`、`:3` 的獎勵；網路不可用時，離線測試仍須通過。
+`-Live` 會查目前 Wiki revision，驗證已知 stable ID 的 waypoint、Mount Balrior／Outer Nayos 等 namespace Wiki 連結，以及精確的 17 組 `(stable ID, reward ID)`；不得先對 reward ID 去重，以免漏掉共用 waypoint 造成的額外事件誤配。測試明確拒絕 `wiki:soto-wt:1`、`:2`、`:3` 的獎勵；網路不可用時，離線測試仍須通過。
 
 建立本參考版本時的基準為：
 
@@ -329,6 +331,10 @@ https://github.com/jakeuj/Community-Module-Pack/releases/latest/download/Events.
 ### 顯示 task was canceled
 
 區分模組卸載 cancellation 與 15 秒 HTTP timeout。timeout 應回退快取／內建資料並顯示本地化狀態，不直接把例外文字放到 UI。
+
+### 沒有 Wiki 按鈕
+
+先確認卡片的 `Meta.Wiki` 是否為空，再比對官方快取原始 `segment.link`／`group.link` 與 `OfficialEventDefinition.Wiki`。若原始值像 `Convergence: Mount Balrior` 一樣含冒號但解析結果為空，檢查 parser 是否把它當成絕對 URI scheme；修正 `BuildWikiUrl` 的 URL／頁面標題分流，並加入離線 namespace-title 測試與 `wiki:public-con:1`、`:2` live assertions。官方來源成功時不要用 `events.json` 的 Wiki 欄位掩蓋 parser 錯誤。
 
 ### 沒有 waypoint 按鈕
 
