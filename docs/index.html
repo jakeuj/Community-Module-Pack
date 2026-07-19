@@ -234,6 +234,24 @@
           <article class="feature-card spotlight reveal" data-reveal-delay="160"><span>03</span><h3>官方時程與離線備援</h3><p>官方資料成功才更新；無法連線時依序使用成功快取與內建資料。</p></article>
           <article class="feature-card spotlight reveal" data-reveal-delay="240"><span>04</span><h3>自訂聊天訊息</h3><p>以安全模板組合傳送點、雙語事件、分類、時間與已查核獎勵；格式失效時自動退回原始座標。</p></article>
         </div>
+        <div class="chat-showcase reveal">
+          <figure class="chat-shot">
+            <picture>
+              <source type="image/avif" srcset="./assets/events-chat-message-720.avif 720w, ./assets/events-chat-message-1172.avif 1172w" sizes="(max-width: 900px) 92vw, 760px">
+              <source type="image/webp" srcset="./assets/events-chat-message-720.webp 720w, ./assets/events-chat-message-1172.webp 1172w" sizes="(max-width: 900px) 92vw, 760px">
+              <img src="./assets/events-chat-message.png" width="1172" height="531" alt="Events and Metas Observer 模組設定中的自訂聊天訊息格式與即時預覽" loading="lazy" decoding="async">
+            </picture>
+            <figcaption><strong>所見即所得預覽</strong><span>啟用前即可確認複製結果</span></figcaption>
+          </figure>
+          <div class="chat-showcase-copy">
+            <p class="eyebrow">Custom Chat Message</p>
+            <h3>一行模板，<br>複製就是完整活動訊息。</h3>
+            <p>依自己的隊伍習慣排列傳送點、事件名稱、分類、時間與保底獎勵。設定頁會即時顯示實際結果，格式不合法時仍安全退回原始傳送點。</p>
+            <ul class="chat-fields" aria-label="可用的聊天訊息欄位">
+              <li>{point}</li><li>{event}</li><li>{category_zh}</li><li>{time}</li><li>{reward}</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section class="section update-section shell" aria-labelledby="update-title">
