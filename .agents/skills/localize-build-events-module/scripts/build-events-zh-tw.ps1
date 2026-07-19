@@ -88,8 +88,9 @@ $validator = Join-Path $PSScriptRoot 'validate-events-localization.ps1'
 $validation = & $validator -RepoRoot $RepoRoot
 $iconValidator = Join-Path $RepoRoot 'Events Module\Tests\ValidateEventIcons.ps1'
 $iconSourceDirectory = Join-Path $RepoRoot 'Events Module\ref\textures\events'
+$goldCoinIcon = Join-Path $RepoRoot 'Events Module\ref\textures\gold-coin.png'
 
-foreach ($path in @($iconValidator, $iconSourceDirectory)) {
+foreach ($path in @($iconValidator, $iconSourceDirectory, $goldCoinIcon)) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Required event icon validation path not found: $path"
     }
@@ -218,7 +219,13 @@ if ($resourceCount -lt $validation.RequiredKeyCount) {
 
 $archive = [System.IO.Compression.ZipFile]::OpenRead($bhm)
 try {
-    $requiredEntries = @('Events Module.dll', 'manifest.json', 'ref/events.json', 'ref/event-rewards.json') + @(
+    $requiredEntries = @(
+        'Events Module.dll',
+        'manifest.json',
+        'ref/events.json',
+        'ref/event-rewards.json',
+        'ref/textures/gold-coin.png'
+    ) + @(
         $iconFiles | ForEach-Object { "ref/textures/events/$($_.Name)" }
     )
     foreach ($entryName in $requiredEntries) {

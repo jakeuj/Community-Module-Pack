@@ -72,6 +72,7 @@ namespace Events_Module {
         private Texture2D _textureWatchActive;
         private AsyncTexture2D _textureRareReward;
         private AsyncTexture2D _textureDragoniteReward;
+        private AsyncTexture2D _textureCoinReward;
 
         private IReadOnlyList<Meta> _bundledEvents = new List<Meta>();
         private EventRewardCatalog _rewardCatalog = EventRewardCatalog.Empty;
@@ -183,6 +184,7 @@ namespace Events_Module {
             _textureWatchActive = ContentsManager.GetTexture(@"textures\605019.png");
             _textureRareReward = GameService.Content.GetRenderServiceTexture(RareRewardIcon);
             _textureDragoniteReward = GameService.Content.GetRenderServiceTexture(DragoniteRewardIcon);
+            _textureCoinReward = ContentsManager.GetTexture(@"textures\gold-coin.png");
             Meta.ConfigureIconTextures(ContentsManager, ContentsManager.GetTexture(@"textures\1466345.png"));
         }
 
@@ -446,13 +448,6 @@ namespace Events_Module {
                     Parent              = es2,
                 };
 
-                if (meta.Reward != null) {
-                    new EventRewardSummaryControl(meta.Reward, _textureRareReward, _textureDragoniteReward) {
-                        BasicTooltipText = GetRewardDetails(meta.Reward),
-                        Parent = es2
-                    };
-                }
-
                 if (!string.IsNullOrEmpty(meta.Wiki)) {
                     var glowWikiBttn = new GlowButton {
                         Icon = GameService.Content.GetTexture(@"102530"),
@@ -480,6 +475,18 @@ namespace Events_Module {
 
                     glowWaypointBttn.Click += delegate {
                         CopyEventToClipboard(meta);
+                    };
+                }
+
+                if (meta.Reward != null) {
+                    new EventRewardSummaryControl(
+                        meta.Reward,
+                        _textureRareReward,
+                        _textureDragoniteReward,
+                        _textureCoinReward
+                    ) {
+                        BasicTooltipText = GetRewardDetails(meta.Reward),
+                        Parent = es2
                     };
                 }
 
@@ -773,6 +780,7 @@ namespace Events_Module {
             _officialRefreshCancellation = null;
             _textureRareReward = null;
             _textureDragoniteReward = null;
+            _textureCoinReward = null;
 
             GameService.Overlay.UserLocaleChanged -= ChangeLocalization;
             UnsubscribeScheduleHandlers();
