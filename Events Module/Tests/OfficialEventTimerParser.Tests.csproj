@@ -23,6 +23,9 @@
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\EventChatMessageFormatter.cs">
+      <Link>EventChatMessageFormatter.cs</Link>
+    </Compile>
     <Compile Include="..\EventRewardData.cs">
       <Link>EventRewardData.cs</Link>
     </Compile>

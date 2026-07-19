@@ -63,6 +63,8 @@ namespace Events_Module {
         private SettingEntry<bool> _settingNotificationsEnabled;
         private SettingEntry<bool> _settingChimeEnabled;
         private SettingEntry<bool> _settingAutoUpdate;
+        private SettingEntry<bool> _settingUseCustomCopyFormat;
+        private SettingEntry<string> _settingCustomCopyFormat;
 
         private SettingEntry<Point> _settingNotificationsPosition;
 
@@ -129,6 +131,20 @@ namespace Events_Module {
             }
         }
 
+        public bool UseCustomCopyFormat {
+            get => _settingUseCustomCopyFormat?.Value ?? false;
+            set {
+                if (_settingUseCustomCopyFormat != null) _settingUseCustomCopyFormat.Value = value;
+            }
+        }
+
+        public string CustomCopyFormat {
+            get => _settingCustomCopyFormat?.Value ?? DefaultChatMessageFormat;
+            set {
+                if (_settingCustomCopyFormat != null) _settingCustomCopyFormat.Value = value ?? string.Empty;
+            }
+        }
+
         public Point NotificationPosition {
             get => _settingNotificationsPosition.Value;
             set => _settingNotificationsPosition.Value = value;
@@ -145,6 +161,8 @@ namespace Events_Module {
             _settingNotificationsEnabled = selfManagedSettings.DefineSetting(@"notificationsEnabled", true);
             _settingChimeEnabled         = selfManagedSettings.DefineSetting(@"chimeEnabled",         true);
             _settingAutoUpdate           = selfManagedSettings.DefineSetting(@"autoUpdate",           true);
+            _settingUseCustomCopyFormat  = selfManagedSettings.DefineSetting(@"useCustomCopyFormat",  false);
+            _settingCustomCopyFormat     = selfManagedSettings.DefineSetting(@"customCopyFormat",     DefaultChatMessageFormat);
 
             _settingNotificationsPosition = selfManagedSettings.DefineSetting("notificationPosition", new Point(180, 60));
 
@@ -226,6 +244,89 @@ namespace Events_Module {
 
         internal static string Localize(string key, string fallback) {
             return Resources.ResourceManager.GetString(key) ?? fallback;
+        }
+
+        internal static string DefaultChatMessageFormat => Localize(
+            "Chat_message_format_default",
+            "{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?"
+        );
+
+        internal static bool HasCopyableWaypoint(Meta meta) {
+            return meta != null && OfficialEventTimerParser.IsValidWaypointChatLink(meta.Waypoint);
+        }
+
+        private static EventChatMessageValues GetEventChatMessageValues(Meta meta) {
+            if (meta == null) return new EventChatMessageValues();
+
+            string localizedName = GetLocalizedEventName(meta);
+            string englishName = string.IsNullOrWhiteSpace(meta.EnglishName) ? meta.Name : meta.EnglishName;
+            string localizedCategory = GetLocalizedCategoryName(meta);
+            string englishCategory = meta.Category;
+
+            return new EventChatMessageValues {
+                Point = meta.Waypoint?.Trim() ?? string.Empty,
+                EventZh = localizedName,
+                EventEn = string.IsNullOrWhiteSpace(englishName) ? localizedName : englishName,
+                CategoryZh = localizedCategory,
+                CategoryEn = string.IsNullOrWhiteSpace(englishCategory) ? localizedCategory : englishCategory,
+                Time = meta.NextTime.ToShortTimeString()
+            };
+        }
+
+        internal EventChatMessageFormatResult FormatEventChatMessage(Meta meta, string format) {
+            return EventChatMessageFormatter.Format(format, GetEventChatMessageValues(meta));
+        }
+
+        internal void CopyEventToClipboard(Meta meta) {
+            if (!HasCopyableWaypoint(meta)) return;
+
+            EventClipboardTextResult clipboardResult = EventChatMessageFormatter.BuildClipboardText(
+                UseCustomCopyFormat,
+                CustomCopyFormat,
+                GetEventChatMessageValues(meta)
+            );
+
+            if (clipboardResult.FellBackToPoint) {
+                Logger.Warn("Custom chat message format is invalid ({formatFailure}); copied the waypoint instead.",
+                            clipboardResult.FormatResult?.Failure);
+            }
+
+            ClipboardUtil.WindowsClipboardService.SetTextAsync(clipboardResult.Text)
+                         .ContinueWith(copyTask => {
+                              if (copyTask.IsFaulted) {
+                                  string failureMessage = clipboardResult.UsedCustomFormat
+                                      ? Localize("Failed_to_copy_chat_message_to_clipboard", "Failed to copy the chat message to the clipboard. Try again.")
+                                      : Resources.Failed_to_copy_waypoint_to_clipboard__Try_again_;
+                                  ScreenNotification.ShowNotification(failureMessage, ScreenNotification.NotificationType.Red, duration: 2);
+                              } else if (clipboardResult.FellBackToPoint) {
+                                  ScreenNotification.ShowNotification(Localize(
+                                      "Chat_message_format_fallback",
+                                      "The custom format is invalid, so the waypoint was copied instead."
+                                  ), duration: 3);
+                              } else if (clipboardResult.UsedCustomFormat) {
+                                  ScreenNotification.ShowNotification(Localize(
+                                      "Copied_chat_message_to_clipboard",
+                                      "Copied the chat message to the clipboard!"
+                                  ), duration: 2);
+                              } else {
+                                  ScreenNotification.ShowNotification(Resources.Copied_waypoint_to_clipboard_, duration: 2);
+                              }
+                          });
+        }
+
+        internal string GetNotificationTooltip(Meta meta) {
+            if (!HasCopyableWaypoint(meta)) {
+                return Localize("Notification_dismiss_tooltip", "Right click to dismiss.");
+            }
+
+            if (UseCustomCopyFormat && FormatEventChatMessage(meta, CustomCopyFormat).IsValid) {
+                return Localize(
+                    "Notification_custom_format_tooltip",
+                    "Left click to copy the formatted chat message.\nRight click to dismiss."
+                );
+            }
+
+            return Resources.Notification_Tooltip;
         }
 
         private Panel BuildSettingPanel(Rectangle panelBounds) {
@@ -352,7 +453,7 @@ namespace Events_Module {
                     };
                 }
 
-                if (!string.IsNullOrEmpty(meta.Waypoint)) {
+                if (HasCopyableWaypoint(meta)) {
                     var glowWaypointBttn = new GlowButton {
                         Icon = GameService.Content.GetTexture(@"waypoint"),
                         ActiveIcon = GameService.Content.GetTexture(@"glow-waypoint"),
@@ -362,14 +463,7 @@ namespace Events_Module {
                     };
 
                     glowWaypointBttn.Click += delegate {
-                        ClipboardUtil.WindowsClipboardService.SetTextAsync(meta.Waypoint)
-                                     .ContinueWith((clipboardResult) => {
-                                           if (clipboardResult.IsFaulted) {
-                                               ScreenNotification.ShowNotification(Resources.Failed_to_copy_waypoint_to_clipboard__Try_again_, ScreenNotification.NotificationType.Red, duration: 2);
-                                           } else {
-                                               ScreenNotification.ShowNotification(Resources.Copied_waypoint_to_clipboard_, duration: 2);
-                                           }
-                                       });
+                        CopyEventToClipboard(meta);
                     };
                 }
 
@@ -492,8 +586,12 @@ namespace Events_Module {
             return msg.ToString();
         }
 
-        private static string GetLocalizedEventName(Meta meta) {
+        internal static string GetLocalizedEventName(Meta meta) {
             return Resources.ResourceManager.GetString(meta.Name) ?? meta.Name;
+        }
+
+        internal static string GetLocalizedCategoryName(Meta meta) {
+            return Resources.ResourceManager.GetString(meta.Category) ?? meta.Category;
         }
 
         private static string GetEventDisplayText(Meta meta) {

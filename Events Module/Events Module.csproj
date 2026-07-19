@@ -57,6 +57,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicSettingsView.cs" />
+    <Compile Include="EventChatMessageFormatter.cs" />
     <Compile Include="EventNotification.cs" />
     <Compile Include="EventRewardData.cs" />
     <Compile Include="EventRewardSummaryControl.cs" />

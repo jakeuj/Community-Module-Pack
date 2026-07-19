@@ -1,7 +1,6 @@
 ﻿using Blish_HUD;
 using Blish_HUD.Content;
 using Blish_HUD.Controls;
-using Events_Module.Properties;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -27,8 +26,8 @@ namespace Events_Module {
 
         private static int _visibleNotifications = 0;
 
-        private EventNotification(string title, AsyncTexture2D icon, string message, string waypoint) {
-            string tooltipText = Resources.Notification_Tooltip;
+        private EventNotification(string title, AsyncTexture2D icon, string message, Meta meta) {
+            string tooltipText = EventsModule.ModuleInstance.GetNotificationTooltip(meta);
 
             _icon = icon;
 
@@ -61,18 +60,12 @@ namespace Events_Module {
             _visibleNotifications++;
 
             this.RightMouseButtonReleased += delegate { this.Dispose(); };
-            this.LeftMouseButtonReleased += delegate {
-                ClipboardUtil.WindowsClipboardService.SetTextAsync(waypoint)
-                             .ContinueWith((clipboardResult) => {
-                                  if (clipboardResult.IsFaulted) {
-                                      ScreenNotification.ShowNotification(Resources.Failed_to_copy_waypoint_to_clipboard__Try_again_, ScreenNotification.NotificationType.Red, duration: 2);
-                                  } else {
-                                      ScreenNotification.ShowNotification(Resources.Copied_waypoint_to_clipboard_, duration: 2);
-                                  }
-                              });
-
-                this.Dispose();
-            };
+            if (EventsModule.HasCopyableWaypoint(meta)) {
+                this.LeftMouseButtonReleased += delegate {
+                    EventsModule.ModuleInstance.CopyEventToClipboard(meta);
+                    this.Dispose();
+                };
+            }
         }
 
         protected override CaptureType CapturesInput() {
@@ -117,8 +110,8 @@ namespace Events_Module {
                      .OnComplete(Dispose);
         }
 
-        public static void ShowNotification(string title, AsyncTexture2D icon, string message, float duration, string waypoint) {
-            var notif = new EventNotification(title, icon, message, waypoint) {
+        public static void ShowNotification(string title, AsyncTexture2D icon, string message, float duration, Meta meta) {
+            var notif = new EventNotification(title, icon, message, meta) {
                 Parent = Graphics.SpriteScreen
             };
 

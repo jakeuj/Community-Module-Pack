@@ -566,4 +566,56 @@ Right click to dismiss.</value>
   <data name="Module_update_now" xml:space="preserve">
     <value>Update now</value>
   </data>
+  <data name="Chat_message_format_title" xml:space="preserve">
+    <value>Chat message copy format</value>
+  </data>
+  <data name="Chat_message_format_enable" xml:space="preserve">
+    <value>Use a custom chat message format</value>
+  </data>
+  <data name="Chat_message_format_enable_tooltip" xml:space="preserve">
+    <value>When enabled, waypoint copy actions include event details and your custom text.</value>
+  </data>
+  <data name="Chat_message_format_default" xml:space="preserve">
+    <value>{point} [{category_zh}] {event}, starting at {time}. Anyone want to join?</value>
+  </data>
+  <data name="Chat_message_format_fields" xml:space="preserve">
+    <value>Fields: {point}, {event}, {event_zh}, {event_en}, {category}, {category_zh}, {category_en}, {time}. Use {{ and }} for literal braces.</value>
+  </data>
+  <data name="Chat_message_format_preview" xml:space="preserve">
+    <value>Format preview: {0}</value>
+  </data>
+  <data name="Chat_message_format_preview_unavailable" xml:space="preserve">
+    <value>Preview unavailable because no event currently has a waypoint.</value>
+  </data>
+  <data name="Chat_message_format_reset" xml:space="preserve">
+    <value>Reset format</value>
+  </data>
+  <data name="Chat_message_format_error_empty" xml:space="preserve">
+    <value>The format cannot be empty.</value>
+  </data>
+  <data name="Chat_message_format_error_missing_point" xml:space="preserve">
+    <value>The format must contain {point}.</value>
+  </data>
+  <data name="Chat_message_format_error_unknown_field" xml:space="preserve">
+    <value>Unknown field: {0}</value>
+  </data>
+  <data name="Chat_message_format_error_braces" xml:space="preserve">
+    <value>The format contains unmatched braces.</value>
+  </data>
+  <data name="Chat_message_format_fallback" xml:space="preserve">
+    <value>The custom format is invalid, so the waypoint was copied instead.</value>
+  </data>
+  <data name="Copied_chat_message_to_clipboard" xml:space="preserve">
+    <value>Copied the chat message to the clipboard!</value>
+  </data>
+  <data name="Failed_to_copy_chat_message_to_clipboard" xml:space="preserve">
+    <value>Failed to copy the chat message to the clipboard. Try again.</value>
+  </data>
+  <data name="Notification_custom_format_tooltip" xml:space="preserve">
+    <value>Left click to copy the formatted chat message.
+Right click to dismiss.</value>
+  </data>
+  <data name="Notification_dismiss_tooltip" xml:space="preserve">
+    <value>Right click to dismiss.</value>
+  </data>
 </root>

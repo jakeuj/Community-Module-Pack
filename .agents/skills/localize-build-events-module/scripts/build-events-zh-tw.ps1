@@ -124,6 +124,15 @@ if (-not $outputPath.EndsWith([string][System.IO.Path]::DirectorySeparatorChar))
     $outputPath += [System.IO.Path]::DirectorySeparatorChar
 }
 
+# Blish HUD's packaging target includes files already present in OutDir. Remove both package
+# filenames before rebuilding so a previous final artifact cannot be nested in the next BHM.
+foreach ($packageName in @('Events Module.bhm', 'Events.Module.bhm')) {
+    $stalePackage = Join-Path $outputPath $packageName
+    if (Test-Path -LiteralPath $stalePackage) {
+        Remove-Item -LiteralPath $stalePackage -Force
+    }
+}
+
 $arguments = @(
     $project,
     '/t:Rebuild',
@@ -222,6 +231,13 @@ try {
         if ($null -ne $archive.GetEntry($forbiddenEntry)) {
             throw "BHM package must not contain host assembly $forbiddenEntry."
         }
+    }
+
+    $nestedPackage = $archive.Entries |
+        Where-Object { [System.IO.Path]::GetExtension($_.FullName) -ieq '.bhm' } |
+        Select-Object -First 1
+    if ($null -ne $nestedPackage) {
+        throw "BHM package must not contain nested package $($nestedPackage.FullName)."
     }
 
     $manifestEntry = $archive.GetEntry('manifest.json')

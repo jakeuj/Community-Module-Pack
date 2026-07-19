@@ -213,7 +213,7 @@ namespace Events_Module {
                             e.Texture,
                             string.Format(Resources.Starts_in__0_, timeUntil.Minutes().Humanize()),
                             10f,
-                            e.Waypoint
+                            e
                         );
                         e.HasAlerted = true;
                     }

@@ -84,6 +84,7 @@ namespace Events_Module {
             AssertThrows(Fixture.Replace("'r': 2", "'r': 9"), "Missing segment references must be rejected.");
             AssertThrows(Fixture.Replace("[&BEwCAAA=]", "not-a-chat-link"), "Malformed waypoint chat links must be rejected.");
 
+            RunEventChatMessageFormatterTests();
             RunIconMatcherTests();
             RunRewardCatalogTests();
             RunModuleUpdateTests();
@@ -95,6 +96,91 @@ namespace Events_Module {
                 productionGuardRejectedFixture = true;
             }
             Assert(productionGuardRejectedFixture, "Production sanity-count checks did not reject a tiny payload.");
+        }
+
+        private static void RunEventChatMessageFormatterTests() {
+            var values = new EventChatMessageValues {
+                Point = "[&BEwCAAA=]",
+                EventZh = "吞噬托",
+                EventEn = "Tequatl the Sunless",
+                CategoryZh = "世界王",
+                CategoryEn = "World Bosses",
+                Time = "下午 07:30"
+            };
+
+            EventChatMessageFormatResult complete = EventChatMessageFormatter.Format(
+                "{point}|{event}|{event_zh}|{event_en}|{category}|{category_zh}|{category_en}|{time}|{{literal}}",
+                values
+            );
+            Assert(complete.IsValid, "A format containing all supported fields should be valid.");
+            Assert(complete.Text == "[&BEwCAAA=]|吞噬托 / Tequatl the Sunless|吞噬托|Tequatl the Sunless|世界王 / World Bosses|世界王|World Bosses|下午 07:30|{literal}",
+                   "Supported chat message fields or escaped braces were formatted incorrectly.");
+
+            EventChatMessageFormatResult freeText = EventChatMessageFormatter.Format(
+                "{point} 【{category_zh}】 {event}，{time} 開打，有人要一起嗎？",
+                values
+            );
+            Assert(freeText.IsValid &&
+                   freeText.Text == "[&BEwCAAA=] 【世界王】 吞噬托 / Tequatl the Sunless，下午 07:30 開打，有人要一起嗎？",
+                   "Free text and punctuation should be preserved around formatted fields.");
+
+            EventClipboardTextResult disabled = EventChatMessageFormatter.BuildClipboardText(
+                false,
+                "{unknown}",
+                values
+            );
+            Assert(disabled.Text == values.Point && !disabled.UsedCustomFormat && !disabled.FellBackToPoint,
+                   "A disabled custom format should preserve the original waypoint copy behavior.");
+
+            EventClipboardTextResult enabled = EventChatMessageFormatter.BuildClipboardText(
+                true,
+                "{point} {event}",
+                values
+            );
+            Assert(enabled.Text == "[&BEwCAAA=] 吞噬托 / Tequatl the Sunless" &&
+                   enabled.UsedCustomFormat && !enabled.FellBackToPoint,
+                   "A valid enabled format should produce a formatted chat message.");
+
+            EventClipboardTextResult fallback = EventChatMessageFormatter.BuildClipboardText(
+                true,
+                "{event}",
+                values
+            );
+            Assert(fallback.Text == values.Point && !fallback.UsedCustomFormat && fallback.FellBackToPoint &&
+                   fallback.FormatResult.Failure == EventChatMessageFormatFailure.MissingPoint,
+                   "An invalid enabled format should safely fall back to the original waypoint.");
+
+            values.EventEn = values.EventZh;
+            values.CategoryEn = values.CategoryZh;
+            EventChatMessageFormatResult deduplicated = EventChatMessageFormatter.Format(
+                "{point} {event} {category}",
+                values
+            );
+            Assert(deduplicated.IsValid && deduplicated.Text == "[&BEwCAAA=] 吞噬托 世界王",
+                   "Smart bilingual fields should not duplicate identical localized and English values.");
+
+            AssertFormatFailure(null, EventChatMessageFormatFailure.EmptyFormat,
+                                "An empty chat message format must be rejected.");
+            AssertFormatFailure("{event} {time}", EventChatMessageFormatFailure.MissingPoint,
+                                "A chat message format without {point} must be rejected.");
+            AssertFormatFailure("{{point}}", EventChatMessageFormatFailure.MissingPoint,
+                                "An escaped literal {point} must not satisfy the required field.");
+            AssertFormatFailure("{point} {unknown}", EventChatMessageFormatFailure.UnknownField,
+                                "Unknown chat message fields must be rejected.");
+            AssertFormatFailure("{point", EventChatMessageFormatFailure.UnbalancedBraces,
+                                "An unterminated opening brace must be rejected.");
+            AssertFormatFailure("{point}}", EventChatMessageFormatFailure.UnbalancedBraces,
+                                "An unmatched closing brace must be rejected.");
+        }
+
+        private static void AssertFormatFailure(string format,
+                                                EventChatMessageFormatFailure expectedFailure,
+                                                string message) {
+            EventChatMessageFormatResult result = EventChatMessageFormatter.Format(
+                format,
+                new EventChatMessageValues { Point = "[&BEwCAAA=]" }
+            );
+            Assert(!result.IsValid && result.Failure == expectedFailure, message);
         }
 
         private static void RunIconMatcherTests() {
